@@ -352,7 +352,7 @@
     buildMinimap();
   }
   function agendaProjectsHTML() {
-    return `<div class="ag-intro"><h1>${statement}</h1></div><div class="ag-wall">${filtered().map((w, i) => tileHTML(w, i) + stickyFor(i)).join('')}</div><div class="ag-logos">${logosHTML()}</div><div class="ag-outro">${outroHTML()}</div>`;
+    return `<div class="ag-intro">${introCopy}</div><div class="ag-wall">${filtered().map((w, i) => tileHTML(w, i) + stickyFor(i)).join('')}</div><div class="ag-outro">${outroHTML()}</div>`;
   }
 
   function columnsFor(v) {
@@ -472,7 +472,7 @@
     <div class="legend"><span>${icon.note}Notes</span><span>${FOLDERS ? icon.folder : icon.card}Work</span></div>
     <div class="trusted"><span class="trusted__label">Trusted by</span><div class="trusted__strip">${trustedRun}${trustedRun.replace('class="trusted__run"', 'class="trusted__run" aria-hidden="true"')}</div></div>`;
 
-  /* ── The sidebar, as on Puru's: the statement, the way in, and what backs it up; in Stories, how to read it too ── */
+  /* ── The sidebar, the same in both views: our Stories intro on top, and what backs it up at the foot, as on Puru's ── */
   const LOGO_GAP = 28, LOGO_SPEED = 20; // px, px per second
   const TRUSTED = LOGOS.filter((l) => !l.avatarOnly);
   // a row of logos that runs in a loop; its length sets its time, so every row moves at the same speed
@@ -484,15 +484,13 @@
   function logosHTML() {
     return `<div class="marquees" role="group" aria-label="Trusted by">${logoRow(TRUSTED.filter((_, i) => i % 2 === 0))}${logoRow(TRUSTED.filter((_, i) => i % 2), true)}</div>`;
   }
-  const statement = 'Design-led growth for Tech &amp; AI <em>companies</em>.';
-  // the sidebar in two halves: the pitch up top with room to breathe, and everything that backs it up together at the foot
-  // in Stories the legend is a guide too: reach for Notes or Work and the rest of the story steps back
-  const sideMid = () => (view === 'projects' ? '' : `<div class="side__mid">
-      <p>Our story, by the day. Notes are how we got here. Work is what we've shipped.</p>
+  // the sidebar in two halves: our Stories intro up top with the way in, and everything that backs it up together at the foot;
+  // the legend is a guide too: reach for Notes or Work and the rest steps back
+  const sideHTML = () => `<div class="side__top">
+      <h1>Our story, <em>by the day</em>.</h1>
+      <p>37degree is a design-led growth studio for Tech &amp; AI companies. Notes are how we got here. Work is what we've shipped.</p>
       <div class="legend"><button data-focus="note">${icon.note}Notes</button><button data-focus="work">${FOLDERS ? icon.folder : icon.card}Work</button></div>
-    </div>`);
-  const sideHTML = () => `<div class="side__top"><h1>${statement}</h1></div>
-    ${sideMid()}
+    </div>
     <div class="side__proof">
       ${SIDE_QUOTE ? `<div class="side__peek">${cardHTML(SIDE_QUOTE)}</div>` : ''}
       <div class="side__pocket">
@@ -777,7 +775,7 @@
     setView(VIEWS[i]);
   }
 
-  /* ── "Work with us": at the end of the bottom bar, and under the intro or the sidebar's statement ── */
+  /* ── "Work with us": at the end of the bottom bar, and in the sidebar (on phones, the intro) ── */
   // four looks to choose from: ?cta=1 ink pill (default), 2 brand orange, 3 the open slot, 4 the founders
   const CTA_LOOK = ['ink', 'brand', 'slot', 'founders'][(+new URLSearchParams(location.search).get('cta') || 1) - 1] || 'ink';
   const go = `<i class="cta__go">${icon.arrow}</i>`;
@@ -798,21 +796,16 @@
   };
 
   /* ── Filter: Projects only ────────────────────────── */
-  // three takes to pick from: ?filter=1 one pill by "Work with us" that drops a list (default), 2 that pill opening sideways
-  // into every filter, 3 a pill growing out of the Projects button with its list opening upward
+  // a pill growing out of the Projects button in the bottom bar; its list opens upward, saying how much each filter holds
   const filterEl = $('.filter');
-  const FILTER_UI = { 1: 'menu', 2: 'island', 3: 'sprout' }[new URLSearchParams(location.search).get('filter')] || 'menu';
   const svg = (d) => `<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const FILTER_ICON = { lines: svg('M2.5 4h11M4.5 8h7M6.5 12h3'), caret: svg('M4.5 6.5 8 10l3.5-3.5'), x: svg('M5 5l6 6M11 5l-6 6') };
   const offered = FILTERS.filter((f) => filterCount(f.key));
-  const listed = FILTER_UI === 'menu' || FILTER_UI === 'sprout'; // the lists say how many projects each filter holds
-  filterEl.classList.add(`filter--${FILTER_UI}`);
-  if (FILTER_UI === 'sprout') seg.after(filterEl);
+  seg.after(filterEl);
   filterEl.innerHTML =
-    `<button class="filter__btn" aria-expanded="false">${FILTER_ICON.lines}<span class="filter__cur"></span>${listed ? `<span class="filter__caret">${FILTER_ICON.caret}</span>` : ''}</button>` +
+    `<button class="filter__btn" aria-expanded="false">${FILTER_ICON.lines}<span class="filter__cur"></span><span class="filter__caret">${FILTER_ICON.caret}</span></button>` +
     `<div class="filter__opts" role="radiogroup" aria-label="Show">` +
-    offered.map((f) => `<button role="radio" data-filter="${f.key}">${f.label}${listed ? `<span class="filter__n">${filterCount(f.key)}</span>` : ''}</button>`).join('') +
-    `${FILTER_UI === 'island' ? `<button class="filter__x" aria-label="Close the filter">${FILTER_ICON.x}</button>` : ''}</div>`;
+    offered.map((f) => `<button role="radio" data-filter="${f.key}">${f.label}<span class="filter__n">${filterCount(f.key)}</span></button>`).join('') + `</div>`;
 
   function syncFilter() {
     filterEl.hidden = view !== 'projects';
@@ -841,7 +834,6 @@
   filterEl.addEventListener('click', (e) => {
     const f = e.target.closest('[data-filter]');
     if (f) return setFilter(f.dataset.filter);
-    if (e.target.closest('.filter__x')) return toggleFilter(false);
     if (e.target.closest('.filter__btn')) toggleFilter();
   });
   document.addEventListener('click', (e) => { if (!e.target.closest('.filter')) toggleFilter(false); });

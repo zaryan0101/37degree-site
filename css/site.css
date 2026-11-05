@@ -159,38 +159,21 @@ em { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
 .filter.is-on .filter__caret { color: inherit; opacity: .6; }
 .filter__n { font: 500 12px/1 var(--font-sans); color: var(--faint); font-variant-numeric: tabular-nums; }
 
-/* the list (1 and 3): every filter with how many projects it holds */
-.filter--menu .filter__opts, .filter--sprout .filter__opts {
+/* the list: every filter with how many projects it holds */
+.filter--sprout .filter__opts {
   position: absolute; z-index: 80;
   flex-direction: column; min-width: 230px; padding: 6px;
   background: var(--paper-2); border: 1px solid var(--line-2); border-radius: var(--r-card); box-shadow: var(--float);
   opacity: 0; visibility: hidden; scale: .96;
   transition: opacity .2s, scale .35s var(--spring), translate .35s var(--spring), visibility 0s .35s;
 }
-.filter--menu.is-open .filter__opts, .filter--sprout.is-open .filter__opts { opacity: 1; visibility: visible; scale: 1; translate: 0; transition-delay: 0s; }
-.filter--menu .filter__opts button, .filter--sprout .filter__opts button { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; border-radius: var(--r-inner); color: var(--ink); text-align: left; }
-.filter--menu .filter__opts button:hover, .filter--menu .filter__opts button[aria-checked="true"],
+.filter--sprout.is-open .filter__opts { opacity: 1; visibility: visible; scale: 1; translate: 0; transition-delay: 0s; }
+.filter--sprout .filter__opts button { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; border-radius: var(--r-inner); color: var(--ink); text-align: left; }
 .filter--sprout .filter__opts button:hover, .filter--sprout .filter__opts button[aria-checked="true"] { background: var(--paper); }
-.filter--menu [aria-checked="true"] .filter__n, .filter--sprout [aria-checked="true"] .filter__n { color: var(--brand); }
+.filter--sprout [aria-checked="true"] .filter__n { color: var(--brand); }
 
-/* 1 · menu: one pill by "Work with us", the list dropping below it */
-.filter--menu .filter__opts { top: calc(100% + 8px); right: 0; transform-origin: top right; translate: 0 -4px; }
 
-/* 2 · island: that pill opens sideways into every filter, then folds back to the one picked */
-.filter--island .filter__opts {
-  position: absolute; top: 50%; right: 0; z-index: 80; translate: 0 -50%;
-  gap: 2px; max-width: calc(100vw - 36px); padding: 3px;
-  background: var(--paper-2); border: 1px solid var(--line-2); border-radius: var(--r-pill); box-shadow: var(--float);
-  overflow-x: auto; scrollbar-width: none;
-  clip-path: inset(0 0 0 calc(100% - 100px) round var(--r-pill)); opacity: 0; visibility: hidden;
-  transition: clip-path .45s var(--ease), opacity .2s, visibility 0s .45s;
-}
-.filter--island.is-open .filter__opts { clip-path: inset(0 round var(--r-pill)); opacity: 1; visibility: visible; transition-delay: 0s; }
-.filter--island .filter__opts button[aria-checked="true"] { background: var(--ink); color: var(--paper-2); }
-.filter__x { display: grid; place-items: center; flex: none; width: 29px; height: 29px; border-radius: var(--r-pill); color: var(--muted); }
-.filter__x:hover { background: var(--paper); color: var(--ink); }
-
-/* 3 · sprout: a pill growing out of the Projects button in the bottom bar, its list opening upward */
+/* a pill growing out of the Projects button in the bottom bar, its list opening upward */
 .filter--sprout { margin: 0 0 0 2px; animation: none; }
 .filter--sprout .filter__btn { height: 30px; padding: 0 10px; box-shadow: none; background: var(--paper); animation: sprout .45s var(--spring); }
 @keyframes sprout { from { opacity: 0; max-width: 0; padding-left: 0; padding-right: 0; } to { max-width: 220px; } }
@@ -908,9 +891,6 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   .minimap, .dyn-seg + .dyn-div { display: none; }
   /* phones: the pill in the bar keeps to its icon */
   .filter--sprout .filter__cur, .filter--sprout .filter__caret { display: none; }
-  /* the list and the open island hang from the screen's edge, not the pill, so they never run off it */
-  .filter--menu .filter__opts { position: fixed; top: calc(var(--top) + 4px); right: 12px; }
-  .filter--island .filter__opts { position: fixed; top: calc((var(--top) - 38px) / 2); right: 12px; translate: none; max-width: calc(100vw - 24px); }
   /* phones: a little less height in the strip */
   :root { --top: 60px; }
   .mark { gap: 8px; font-size: 17px; }
@@ -1098,12 +1078,11 @@ button.card--slot.card--folder:hover .fold__front { transform: perspective(520px
 }
 .side__top { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; padding-top: 8px; }
 .side h1 { margin: 0; font: 300 30px/1.1 var(--font-sans); letter-spacing: -0.025em; text-wrap: balance; }
-.side__mid { display: flex; flex-direction: column; gap: 12px; }
-.side__mid p { margin: 0; font: 400 13px/1.55 var(--font-sans); color: var(--muted); }
+.side__top p { margin: -12px 0 0; font: 400 14px/1.55 var(--font-sans); color: var(--muted); }
 /* the legend is a guide: each kind lifts when you reach for it, and the rest of the story steps back */
-.side__mid .legend { gap: 4px; margin: 0 0 0 -8px; }
-.side__mid .legend button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--r-pill); color: var(--muted); transition: background .2s, color .2s; }
-.side__mid .legend button:hover, .side__mid .legend button:focus-visible { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.side__top .legend { gap: 4px; margin: -12px 0 0 -8px; }
+.side__top .legend button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--r-pill); color: var(--muted); transition: background .2s, color .2s; }
+.side__top .legend button:hover, .side__top .legend button:focus-visible { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
 body[data-focus="note"] .track .card:not(.note-card),
 body[data-focus="work"] .track .card:not(.work-card):not(.card--folder),
 body[data-focus] .track .card--quote { opacity: .16; }
@@ -1235,7 +1214,6 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
 .wall__more:hover { color: var(--paper-2); background: var(--ink); box-shadow: none; }
 .wall__more svg { width: 13px; height: 13px; }
 @media (max-width: 760px) {
-  .ag-logos { padding: 32px 2px 0; }
   .ag-wall { display: grid; gap: 30px; }
   .ag-wall .sticky { justify-self: center; }
   .ag-wall .wk__cap { flex-direction: column; gap: 18px; padding-top: 14px; }
