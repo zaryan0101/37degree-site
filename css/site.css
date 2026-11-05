@@ -197,7 +197,7 @@ em { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
   border-bottom: 1px solid var(--line-2);
 }
 .col-head .d { font: 600 15px/1.25 var(--font-sans); letter-spacing: -0.01em; }
-.col-head .y { font: 600 12px/1.2 var(--font-sans); color: var(--faint); }
+.col-head .y { font: 600 12px/1.2 var(--font-sans); color: var(--muted); }
 .col-body {
   display: grid;
   grid-template-rows: repeat(var(--rows), var(--row));
@@ -433,7 +433,7 @@ button.mrow:hover { background: var(--paper-2); }
 .mrow i { width: 8px; height: 8px; border-radius: var(--r-pill); background: var(--fg, var(--line)); }
 .mrow.is-work i { border-radius: 2px; background: var(--ink); }
 .mrow .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mrow .d { font: 500 11px/1 var(--font-sans); color: var(--faint); }
+.mrow .d { font: 500 11px/1 var(--font-sans); color: var(--muted); }
 .mrow.is-visited .t { opacity: .5; }
 .mrow.is-lifted, .mcal__d.is-lifted { opacity: 0; }
 .mquote { padding: 4px 10px; font: 300 16px/1.25 var(--font-sans); letter-spacing: -0.02em; color: var(--ink); }
@@ -881,11 +881,11 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   .ag-intro .trusted { margin-top: 8px; padding: 8px 0 0; }
   .ag-intro .trusted__strip { margin: 0 -16px; }
   .ag-month { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: 12px 16px 10px; background: var(--paper); border-bottom: 1px solid var(--line-2); font: 600 15px/1 var(--font-sans); letter-spacing: -0.01em; }
-  .ag-month span { color: var(--faint); }
+  .ag-month span { color: var(--muted); }
   .ag-day { display: grid; grid-template-columns: 38px 1fr; gap: 10px; padding: 10px 0; }
   .ag-date { text-align: center; padding-top: 8px; }
   .ag-date b { display: block; font: 600 17px/1 var(--font-sans); }
-  .ag-date span { font: 600 10px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--faint); }
+  .ag-date span { font: 600 10px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
   .ag-day.is-today .ag-date b { color: var(--brand); }
   .ag-cards { display: grid; gap: 14px; min-width: 0; }
   .ag-cards .card { margin: 0; min-height: 76px; }

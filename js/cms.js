@@ -310,7 +310,7 @@ window.CMS = {
    "type": "step",
    "case": "sidecar",
    "section": "video",
-   "title": "sidecar-explainer.mp4"
+   "title": "A video that does the <em>talking</em>"
   },
   {
    "id": "day-810-landing-page-design-build-df04",

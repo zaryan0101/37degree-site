@@ -18,10 +18,31 @@ const safeHref = (u) => (u && /^https?:\/\/[^\s"'<>]+$/i.test(u.trim()) ? u.trim
 const safeImg = (p) => typeof p === 'string' && /^assets\/[\w\-./]+\.(jpe?g|png|webp|gif|avif)$/i.test(p) && !p.includes('..');
 const safeClip = (p) => typeof p === 'string' && /^assets\/[\w\-./]+\.(mp4|webm|mov)$/i.test(p) && !p.includes('..');
 const words = (a) => (Array.isArray(a) ? a.map((x) => String(x).trim()).filter(Boolean) : []);
-// write-ups come from the rich-text editor; drop anything that could run
-const cleanHTML = (h) => (h && h.trim()
-  ? h.replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, '').replace(/\son\w+="[^"]*"/gi, '').replace(/javascript:/gi, '')
-  : undefined);
+// write-ups come from the rich-text editor: keep only plain formatting tags, and of their attributes only a link's web or
+// mail address and an image's path in assets/ (with its alt); everything else, and anything that could run, is dropped
+const KEEP = new Set(['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'a', 'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'blockquote', 'img', 'hr', 'code', 'pre']);
+const attr = (attrs, name) => { const m = attrs.match(new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i')); return m ? (m[2] ?? m[3] ?? m[4]) : ''; };
+const quote = (v) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+function cleanHTML(h) {
+  if (!h || !h.trim()) return undefined;
+  return h
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(script|style|iframe|object|embed|svg|math|template|noscript)\b[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<\/?([a-z][a-z0-9]*)\b([^>]*)>/gi, (tag, name, attrs) => {
+      name = name.toLowerCase();
+      if (!KEEP.has(name)) return '';
+      if (tag[1] === '/') return `</${name}>`;
+      if (name === 'a') {
+        const href = attr(attrs, 'href').trim();
+        return /^(https?:\/\/|mailto:)[^\s"'<>]+$/i.test(href) ? `<a href="${quote(href)}" target="_blank" rel="noopener">` : '<a>';
+      }
+      if (name === 'img') {
+        const src = attr(attrs, 'src').trim();
+        return safeImg(src) ? `<img src="${quote(src)}" alt="${quote(attr(attrs, 'alt'))}" loading="lazy">` : '';
+      }
+      return `<${name}>`;
+    });
+}
 const idOf = (file) => basename(file, '.json');
 
 /* ── Cards → events ─────────────────────────────────── */

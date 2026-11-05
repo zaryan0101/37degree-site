@@ -230,7 +230,8 @@
   }
 
   /* ── Columns ──────────────────────────────────────── */
-  let view = 'days'; // open on Stories, the studio by the day; Projects is one click away
+  // open on Stories, the studio by the day, unless the address names another view (?view=projects, ?view=explore)
+  let view = { projects: 'projects', explore: 'explore' }[new URLSearchParams(location.search).get('view')] || 'days';
 
   // Projects view: one column per company, newest first, holding its projects and the work linked to them
   const CASE_EV = Object.fromEntries(ALL.filter((e) => e.type === 'case').map((e) => [e.case, e]));
@@ -944,6 +945,10 @@
     if (v === view) return;
     // Stories runs by date and Projects by what leads, so there is no shared place to keep: start each at its beginning
     view = v;
+    // the address carries the view, so a refresh or a shared link lands on it
+    const q = new URLSearchParams(location.search);
+    if (v === 'days') q.delete('view'); else q.set('view', v);
+    history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
     showSide();
     render();
     timeline.scrollLeft = 0;
