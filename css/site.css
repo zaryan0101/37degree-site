@@ -407,48 +407,6 @@ body.draft .is-tbc { outline: 1.5px dashed var(--brand); outline-offset: 2px; }
 .is-compact .card__date { margin-top: 2px; }
 .is-compact .card--quote { font-size: 16px; }
 .is-compact .num { font-size: 18px !important; }
-/* Projects: a company's column is two Stories columns wide, so its work shows big and the cards beside it at their usual size;
-   it grows by that again when its cards run out of rows. The pauses and the open slot keep one Stories column */
-.col.is-project { flex-basis: calc(var(--col) * 2 * var(--lanes, 1)); }
-
-/* a tile: the work itself, its clip or its real images, with what it is and how to open it underneath */
-.card.card--tile { display: flex; flex-direction: column; gap: 0; padding: 0; background: none; border: 0; box-shadow: none; text-align: left; overflow: visible; }
-.tile__m { position: relative; display: block; flex: 1; min-height: 0; overflow: hidden; border-radius: 20px; background: color-mix(in srgb, var(--ink) 5%, var(--paper-2)); }
-.tile__m::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 6%, transparent); pointer-events: none; }
-.tile__m img, .tile__m video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; transition: opacity .45s, transform .8s var(--ease); }
-.tile__m video { object-position: center; }
-/* a second image waits behind the first and comes up on hover */
-.tile__m img + img { opacity: 0; }
-.tile__m img:nth-of-type(n + 3) { display: none; }
-.card--tile:hover .tile__m img:first-of-type:not(:last-of-type) { opacity: 0; }
-.card--tile:hover .tile__m img + img { opacity: 1; }
-.card--tile:hover .tile__m img, .card--tile:hover .tile__m video { transform: scale(1.012); }
-/* posters and phone screens sit side by side, whole */
-.card--tile .tile__m.is-set img { display: block; top: 12%; height: 76%; left: 5%; width: 27%; object-fit: contain; object-position: center; opacity: 1; transform: none; }
-.card--tile .tile__m.is-set img:nth-of-type(2) { left: 36.5%; }
-.card--tile .tile__m.is-set img:nth-of-type(3) { left: 68%; }
-.card--tile .tile__m.is-set img:first-of-type:nth-last-of-type(2) { left: 7%; width: 41%; }
-.card--tile .tile__m.is-set img:nth-of-type(2):last-of-type { left: 52%; width: 41%; }
-.card--tile .tile__m.is-set img:only-of-type { left: 10%; width: 80%; }
-.tile__cap { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: 32px; min-width: 0; padding: 16px 2px 0; }
-.tile__about { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
-.tile__title { font: 500 15px/1.3 var(--font-sans); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; }
-.tile__open { display: flex; align-items: center; gap: 8px; font: 400 13px/1.5 var(--font-sans); color: var(--muted); white-space: nowrap; transition: color .2s; }
-.tile__open i { display: grid; place-items: center; transition: transform .25s var(--ease); }
-.tile__open svg { width: 13px; height: 13px; }
-.card--tile:hover .tile__open { color: var(--ink); }
-.card--tile:hover .tile__open i { transform: translateX(3px); }
-.tile__figs { display: flex; flex: none; gap: 32px; }
-.tile__fig { display: flex; flex-direction: column; gap: 5px; }
-.tile__fig i { font: 400 12px/1.2 var(--font-sans); font-style: normal; color: var(--muted); }
-.tile__fig b { font: 300 20px/1.15 var(--font-sans); letter-spacing: -0.025em; color: var(--ink); white-space: nowrap; }
-.col.is-project .col-head .d { max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* a pause between companies: a small label in place of a company's name; its proof is about all the work, so it carries no date */
-.col.is-filler .card__date { display: none; }
-.col-head .col-label { font: 500 11px/1 var(--font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
-/* a company's proof sits beside its dates, the number in ink like a milestone's */
-.col.is-project .col-head .y { max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.col.is-project .col-head .y b { color: var(--ink); }
 
 /* Months: a month calendar, the month's moment, then the agenda */
 .col.is-month { flex-basis: 300px; display: flex; flex-direction: column; }
@@ -555,16 +513,13 @@ button.mrow:hover { background: var(--paper-2); }
 .cta__faces i + i { margin-left: -3px; }
 
 /* its places: the top strip, the end of the bottom bar, the intro under the line about the studio */
-.cta--strip { margin: 0 12px 0 auto; box-shadow: none; }
-.filter--menu:not([hidden]) ~ .cta--strip, .filter--island:not([hidden]) ~ .cta--strip { margin-left: 0; }
 .cta--bar { padding: 0; background: none; border: 0; box-shadow: none; }
 .cta--intro { align-self: flex-start; margin-top: 4px; }
-.cta--strip .cta__txt small, .cta--bar .cta__txt small { display: none; }
-.cta--strip.cta--slot .cta__fold, .cta--bar.cta--slot .cta__fold { width: 26px; height: 26px; border-radius: 8px; }
-.cta--strip.cta--slot .cta__go, .cta--bar.cta--slot .cta__go { width: 26px; height: 26px; }
-.cta--strip.cta--brand .cta__in, .cta--bar.cta--brand .cta__in { height: 32px; }
-.cta--strip.cta--brand .cta__go, .cta--bar.cta--brand .cta__go { width: 24px; height: 24px; }
-.cta--strip.cta--brand { box-shadow: none; }
+.cta--bar .cta__txt small { display: none; }
+.cta--bar.cta--slot .cta__fold { width: 26px; height: 26px; border-radius: 8px; }
+.cta--bar.cta--slot .cta__go { width: 26px; height: 26px; }
+.cta--bar.cta--brand .cta__in { height: 32px; }
+.cta--bar.cta--brand .cta__go { width: 24px; height: 24px; }
 .dyn-div { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .dyn-seg { position: relative; display: flex; }
 .dyn-seg button {
@@ -951,20 +906,16 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   .ag-cards .card--slot { min-height: 120px; }
   .ag-cards .card.has-photos { min-height: 210px; }
   .minimap, .dyn-seg + .dyn-div { display: none; }
-  /* phones: a tile stands as tall as its work, with its caption under it */
-  .ag-cards .card--tile .tile__m { flex: none; aspect-ratio: 16 / 10; }
-  .ag-cards .tile__cap { flex-direction: column; gap: 12px; padding-top: 12px; }
   /* phones: the pill in the bar keeps to its icon */
   .filter--sprout .filter__cur, .filter--sprout .filter__caret { display: none; }
   /* the list and the open island hang from the screen's edge, not the pill, so they never run off it */
   .filter--menu .filter__opts { position: fixed; top: calc(var(--top) + 4px); right: 12px; }
   .filter--island .filter__opts { position: fixed; top: calc((var(--top) - 38px) / 2); right: 12px; translate: none; max-width: calc(100vw - 24px); }
-  /* phones: the bar and the intro carry the button; the strip keeps to the mark, the filter and the switch */
+  /* phones: a little less height in the strip */
   :root { --top: 60px; }
   .mark { gap: 8px; font-size: 17px; }
   .mark svg { width: 21px; height: 21px; }
   .strip { padding: 0 16px; }
-  .cta--strip { display: none; }
   .ag-outro { padding: 28px 2px; }
   .ag-outro .outro { padding: 0; }
   /* full width on phones, so it takes touches itself: iOS won't scroll a container that ignores them */
@@ -1125,4 +1076,157 @@ button.card--slot.card--folder:hover .fold__front { transform: perspective(520px
 :root[data-theme="dark"] .card--folder { --av-l: 52%; --chip-bg: rgba(255, 255, 255, .12); --chip-fg: rgba(255, 255, 255, .92); --chip-line: rgba(255, 255, 255, .18); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .card--folder { --av-l: 52%; --chip-bg: rgba(255, 255, 255, .12); --chip-fg: rgba(255, 255, 255, .92); --chip-line: rgba(255, 255, 255, .18); }
+}
+
+/* ── Projects, as on Puru's: one piece of work at a time, centre stage, with the sidebar beside it ── */
+:root { --side: 288px; }
+.side { display: none; }
+@media (min-width: 761px) {
+  /* the work starts beside the panel and runs under it, so hiding the panel moves nothing */
+  body[data-showing="projects"] .track { padding-left: var(--side); }
+  body[data-showing="projects"] .dynbar { left: calc(50% + var(--side) / 2); }
+  body[data-showing="projects"].side-hidden .dynbar { left: 50%; }
+  body[data-showing="projects"] .side {
+    position: fixed; inset: var(--top) auto 0 0; z-index: 30; width: var(--side);
+    display: flex; flex-direction: column; gap: 40px; padding: 32px 32px 32px 18px;
+    overflow-y: auto; scrollbar-width: none; border-right: 1px solid var(--line-2);
+    background: var(--paper); transition: transform .4s var(--ease), box-shadow .3s;
+  }
+  .side::-webkit-scrollbar { display: none; }
+  .side.is-over { box-shadow: 18px 0 48px -24px rgba(18, 18, 18, .22); }
+  body.side-hidden .side { transform: translateX(-100%); }
+}
+.side__top { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; padding-top: 8px; }
+.side h1 { margin: 0; font: 300 30px/1.1 var(--font-sans); letter-spacing: -0.025em; text-wrap: balance; }
+.marquee {
+  overflow: hidden; color: var(--ink);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee__track { display: flex; width: max-content; animation: marquee var(--dur) linear infinite; }
+.marquee:hover .marquee__track { animation-play-state: paused; }
+.marquee__set { display: flex; flex: none; align-items: center; gap: var(--gap); height: 24px; padding-right: var(--gap); opacity: .6; transition: opacity .25s; }
+.marquee:hover .marquee__set { opacity: .85; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  /* no motion: the logos sit still and scroll by hand */
+  .marquee { overflow-x: auto; scrollbar-width: none; -webkit-mask-image: none; mask-image: none; }
+  .marquee__track { animation: none !important; }
+  .marquee__set[aria-hidden] { display: none; }
+  .side { transition: none; }
+}
+.marquees { display: flex; flex-direction: column; gap: 10px; }
+.marquee--rev .marquee__track { animation-direction: reverse; }
+
+:root {
+  --stage-h: calc(100vh - var(--top) - 92px);
+  --slide-w: min(calc(var(--stage-h) * .68 * 1.6), calc(100vw - var(--side) - 180px));
+}
+/* the ruled lines of Stories, with the client where the date would be, lined up with the left edge of the work */
+.col--wall { --slide-pad: 72px; flex: 0 0 auto; }
+.col--wall:first-child { --slide-pad: calc((100vw - var(--side) - var(--slide-w)) / 2); }
+.col--wall .col-head { flex-direction: row; justify-content: flex-start; gap: 10px; padding-left: calc(var(--slide-pad) + 2px); }
+.col--wall .col-head b { font: 500 15px/1.25 var(--font-sans); letter-spacing: -0.01em; white-space: nowrap; }
+.col--wall .col-head .fold__av, .wk__who .fold__av { width: 26px; height: 26px; flex: none; font-size: 11px; color: var(--paper-2); background: var(--ink); box-shadow: none; }
+.col--wall .col-head .fold__mk, .wk__who .fold__mk { height: 12px; width: calc(12px * var(--mk)); }
+.slide { display: flex; align-items: center; gap: 56px; height: calc(var(--stage-h) - var(--head)); padding: 0 72px 0 var(--slide-pad, 72px); }
+.slide > .wk { flex: 0 0 var(--slide-w); width: var(--slide-w); }
+body[data-showing="projects"] .col--end { flex: 0 0 auto; margin-right: calc((100vw - 504px) / 2); }
+body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 100vw) / 2); }
+/* sticky notes from Stories, set down in the white space beside the work */
+.sticky { flex: 0 0 264px; width: 264px; transform: rotate(-2deg); transition: transform .3s var(--ease); }
+.col--wall:nth-child(even) .sticky { transform: rotate(1.6deg); }
+.sticky:hover { transform: none !important; }
+.sticky .card { width: 100%; min-height: 230px; margin: 0; }
+.sticky .card:has(.stack) { min-height: 290px; }
+/* the foot of the sidebar: one column of proof, ruled like the calendar */
+.side__proof { display: flex; flex-direction: column; margin-top: auto; }
+.side__proof > * { padding: 20px 0; border-top: 1px solid var(--line-2); }
+.side__proof > :last-child { padding-bottom: 0; }
+/* the testimonial is tucked behind a pane of frosted glass, like the folders: the words peek out, the rest shows through,
+   its author rises into view as you reach for it, and a click opens it */
+.side__proof > .side__peek { position: relative; z-index: 0; margin: 0 6px -88px; padding: 0; border: 0; transform: rotate(-1deg); transform-origin: 50% 100%; transition: transform .35s var(--spring); }
+.side__peek:hover, .side__peek:focus-within { transform: translateY(-86px) rotate(0deg); }
+.side__peek .card { width: 100%; min-height: 176px; margin: 0; }
+/* one pane of glass, edge to edge across the panel and down to its foot */
+.side__proof > .side__pocket {
+  position: relative; z-index: 1; margin: 0 -32px -32px -18px; padding: 22px 32px 56px 18px; border: 0;
+  background: color-mix(in srgb, var(--paper) 58%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25); backdrop-filter: blur(18px) saturate(1.25);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--paper-2) 80%, transparent), 0 -1px 0 color-mix(in srgb, var(--ink) 5%, transparent), 0 -14px 30px -24px rgba(18, 18, 18, .16);
+}
+.side__trust { margin-top: 30px; }
+/* the note's colour carries on behind the glass, so the frost reads all the way down to the logos */
+.side__peek .card { position: relative; overflow: visible; }
+.side__peek .card::after { content: ''; position: absolute; left: 0; right: 0; top: calc(100% - 1px); height: 112px; background: linear-gradient(var(--bg), transparent); pointer-events: none; }
+/* the logos run the full width of the panel and fade out at its edges */
+.side__trust .marquees { margin: 0 -32px 0 -18px; gap: 16px; }
+.side__trust .marquee__set { height: 22px; opacity: .55; }
+@media (max-height: 760px) { .side__proof > .side__peek { display: none; } }
+.side__stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0; }
+.side__stats div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 6px; }
+.side__stats dd { margin: 0; font: 300 28px/1 var(--font-sans); letter-spacing: -0.03em; }
+.side__stats dt { font: 400 12px/1.35 var(--font-sans); color: var(--muted); }
+
+.wk { display: flex; flex-direction: column; width: 100%; min-width: 0; text-align: left; animation: rise .5s var(--ease) both; animation-delay: calc(var(--i) * 40ms); }
+.wk__m { position: relative; display: block; flex: none; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 20px; background: color-mix(in srgb, var(--ink) 5%, var(--paper-2)); }
+.wk__m::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 6%, transparent); pointer-events: none; }
+.wk__m img, .wk__m video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; transition: opacity .45s, transform .8s var(--ease); }
+.wk__m video { object-position: center; }
+.wk__m img + img { opacity: 0; }
+.wk__m img:nth-of-type(n + 3) { display: none; }
+/* hover shows the next piece of the same project */
+.wk:hover .wk__m img:first-of-type:not(:last-of-type) { opacity: 0; }
+.wk:hover .wk__m img + img { opacity: 1; }
+.wk:hover .wk__m img, .wk:hover .wk__m video { transform: scale(1.012); }
+/* posters and square posts: side by side on the ground, never cropped */
+.wk .wk__m.is-set img { display: block; top: 12%; height: 76%; left: 5%; width: 27%; object-fit: contain; object-position: center; opacity: 1; transform: none; }
+.wk .wk__m.is-set img:nth-of-type(2) { left: 36.5%; }
+.wk .wk__m.is-set img:nth-of-type(3) { left: 68%; }
+.wk .wk__m.is-set img:first-of-type:nth-last-of-type(2) { left: 7%; width: 41%; }
+.wk .wk__m.is-set img:nth-of-type(2):last-of-type { left: 52%; width: 41%; }
+.wk .wk__m.is-set img:only-of-type { left: 10%; width: 80%; }
+.wk__cap { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: 40px; min-width: 0; padding: 24px 2px 0; }
+/* left: what it is and how to open it. right: two figures, large enough to read at a glance */
+.wk__about { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.wk__title { font: 500 16px/1.3 var(--font-sans); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; }
+.wk__figs { display: flex; flex: none; gap: 48px; }
+.wk__fig { display: flex; flex-direction: column; gap: 6px; }
+.wk__fig i { font: 400 12px/1.2 var(--font-sans); font-style: normal; color: var(--muted); }
+.wk__fig b { font: 300 22px/1.15 var(--font-sans); letter-spacing: -0.025em; color: var(--ink); white-space: nowrap; }
+/* where there's no header band above the work (phones), the client sits on the block itself */
+.wk__who { display: flex; flex: none; align-items: center; gap: 8px; padding: 0 2px 12px; }
+.wk__who b { font: 500 14px/1.25 var(--font-sans); letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col--wall .wk__who { display: none; }
+/* every piece says it opens, in words and an arrow that moves as you reach for it */
+.wk__open { display: flex; flex: none; align-items: center; gap: 8px; font: 400 13px/1.5 var(--font-sans); color: var(--muted); white-space: nowrap; transition: color .2s; }
+.wk__open i { display: grid; place-items: center; transition: transform .25s var(--ease); }
+.wk__open svg { width: 13px; height: 13px; }
+.wk:hover .wk__open, .wk:focus-visible .wk__open { color: var(--ink); }
+.wk:hover .wk__open i, .wk:focus-visible .wk__open i { transform: translateX(3px); }
+@media (prefers-reduced-motion: reduce) { .wk { animation: none; } }
+
+/* in Projects the bar steps through the work instead of mapping it */
+.dyn-step { display: none; align-items: center; gap: 2px; padding-right: 2px; }
+.dyn-count { min-width: 46px; font: 400 13px/1 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--muted); text-align: center; }
+.dyn-step button { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--muted); transition: background .2s, color .2s; }
+.dyn-step button:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.dyn-step button:disabled { opacity: .3; cursor: default; background: none; }
+.dyn-step svg { width: 15px; height: 15px; }
+@media (min-width: 761px) {
+  body[data-showing="projects"] .dyn-step { display: flex; }
+  body[data-showing="projects"] .minimap { display: none; }
+}
+.wall__end { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; max-width: 360px; }
+.wall__end .outro { padding: 0; }
+.wall__more { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--r-pill); font: 500 13px/1 var(--font-sans); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); transition: background .2s, color .2s, box-shadow .2s; }
+.wall__more:hover { color: var(--paper-2); background: var(--ink); box-shadow: none; }
+.wall__more svg { width: 13px; height: 13px; }
+@media (max-width: 760px) {
+  .ag-logos { padding: 32px 2px 0; }
+  .ag-wall { display: grid; gap: 30px; }
+  .ag-wall .sticky { justify-self: center; }
+  .ag-wall .wk__cap { flex-direction: column; gap: 18px; padding-top: 14px; }
+  .ag-wall .wk__figs { gap: 32px; }
+  .ag-wall .wk__fig b { font-size: 19px; }
 }

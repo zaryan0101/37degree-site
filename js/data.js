@@ -47,7 +47,6 @@ const CASES = {
     results: [['6 mo', 'From concept to a product in daily use'], ['2 mo', 'To a working alpha inside Teams'], ['4', 'Data sources answered from one chat']],
     cover: 'assets/img/kam-cover.png',
     stack: ['assets/img/kam-cover.png', 'assets/img/kam-03.png', 'assets/img/kam-07.png'],
-    screen: 'teams', // the chapter whose first picture stands for the work beside its folder in Projects
     meta: [
       ['Company', 'DemandFarm'],
       ['Industry', 'AI · CRM · Enterprise SaaS'],
@@ -146,7 +145,6 @@ const CASES = {
     live: 'https://deccan.ai/enterprise-os',
     cover: 'assets/img/dec-cover.png',
     stack: ['assets/img/dec-cover.png', 'assets/img/dec-02.png', 'assets/img/dec-05.png'],
-    screen: 'pain',
     meta: [
       ['Company', 'Deccan AI'],
       ['Industry', 'AI · Data infrastructure · Enterprise SaaS'],
@@ -182,6 +180,12 @@ const TESTIMONIALS = {
   shreya: { name: 'Shreya Kukreja', role: 'Head of Product', img: 'assets/img/t-shreya.jpg', quote: 'Brings modern, thoughtful, and enduring designs at a fast pace while bringing creativity and strategic insight to every project. Moves effortlessly between high-level strategy and fine-grained details.' },
   shai: { name: 'Shai Krishna', role: 'Staff Product Designer @Sense', img: 'assets/img/t-shai.jpg', quote: 'I’ve had the chance to check out their design work, and it’s seriously impressive. He has a knack for understanding what users want and translating it into beautiful, functional designs. His attention to detail is remarkable.' },
 };
+
+// the studio's own numbers, in the Projects sidebar: 37degree's facts, not a client's results
+const STUDIO_FACTS = [
+  { value: '50+', label: 'projects completed' },
+  { value: '2024', label: 'studio founded' },
+];
 
 // one-colour marks (black on transparent, trimmed), each taken from the company's own site where it has one.
 // `ar` is width ÷ height and `d` how much of that box is ink: together they size the logos so they look equally big.
