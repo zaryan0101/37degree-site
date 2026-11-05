@@ -788,7 +788,8 @@
   const ctaIntro = ctaBar.cloneNode(true);
   ctaBar.classList.add('cta--bar');
   ctaIntro.classList.add('cta--intro');
-  bar.append(Object.assign(document.createElement('span'), { className: 'dyn-div' }), ctaBar);
+  // the bar's button only steps in once the sidebar, with its own, has slid away
+  bar.append(Object.assign(document.createElement('span'), { className: 'dyn-div dyn-div--cta' }), ctaBar);
   // the sidebar (or on phones the intro) is drawn again with every view, so the button is put back each time
   const placeCta = () => {
     const at = $(mq.matches ? '.ag-intro' : '.side__top');
@@ -796,7 +797,7 @@
   };
 
   /* ── Filter: Projects only ────────────────────────── */
-  // a pill growing out of the Projects button in the bottom bar; its list opens upward, saying how much each filter holds
+  // a pill growing out of the Projects button in the bottom bar; its list opens upward
   const filterEl = $('.filter');
   const svg = (d) => `<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const FILTER_ICON = { lines: svg('M2.5 4h11M4.5 8h7M6.5 12h3'), caret: svg('M4.5 6.5 8 10l3.5-3.5'), x: svg('M5 5l6 6M11 5l-6 6') };
@@ -805,7 +806,7 @@
   filterEl.innerHTML =
     `<button class="filter__btn" aria-expanded="false">${FILTER_ICON.lines}<span class="filter__cur"></span><span class="filter__caret">${FILTER_ICON.caret}</span></button>` +
     `<div class="filter__opts" role="radiogroup" aria-label="Show">` +
-    offered.map((f) => `<button role="radio" data-filter="${f.key}">${f.label}<span class="filter__n">${filterCount(f.key)}</span></button>`).join('') + `</div>`;
+    offered.map((f) => `<button role="radio" data-filter="${f.key}">${f.label}</button>`).join('') + `</div>`;
 
   function syncFilter() {
     filterEl.hidden = view !== 'projects';
@@ -1496,7 +1497,7 @@
       const slot = ALL.find((x) => x.type === 'slot');
       closeAll(true);
       // it lifts off the button you pressed, or from inside a sheet, off the one in the bar
-      return openNote(slot, cta.classList.contains('cta') ? cta : ctaBar);
+      return openNote(slot, cta.classList.contains('cta') ? cta : mq.matches || document.body.classList.contains('side-hidden') ? ctaBar : ctaIntro);
     }
     const v = t.closest('[data-view]');
     if (v) return setView(v.dataset.view);

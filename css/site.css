@@ -157,7 +157,6 @@ em { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
 .filter__caret { display: inline-grid; color: var(--muted); transition: transform .35s var(--spring); }
 .filter.is-open .filter__caret { transform: rotate(180deg); }
 .filter.is-on .filter__caret { color: inherit; opacity: .6; }
-.filter__n { font: 500 12px/1 var(--font-sans); color: var(--faint); font-variant-numeric: tabular-nums; }
 
 /* the list: every filter with how many projects it holds */
 .filter--sprout .filter__opts {
@@ -170,7 +169,6 @@ em { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
 .filter--sprout.is-open .filter__opts { opacity: 1; visibility: visible; scale: 1; translate: 0; transition-delay: 0s; }
 .filter--sprout .filter__opts button { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; border-radius: var(--r-inner); color: var(--ink); text-align: left; }
 .filter--sprout .filter__opts button:hover, .filter--sprout .filter__opts button[aria-checked="true"] { background: var(--paper); }
-.filter--sprout [aria-checked="true"] .filter__n { color: var(--brand); }
 
 
 /* a pill growing out of the Projects button in the bottom bar, its list opening upward */
@@ -497,6 +495,19 @@ button.mrow:hover { background: var(--paper-2); }
 
 /* its places: the top strip, the end of the bottom bar, the intro under the line about the studio */
 .cta--bar { padding: 0; background: none; border: 0; box-shadow: none; }
+/* while the sidebar shows its own "Work with us", the bar keeps to the views; the button slides in as the sidebar slides away */
+@media (min-width: 761px) {
+  .dynbar .cta--bar, .dynbar .dyn-div--cta {
+    max-width: 0; margin-left: -4px; opacity: 0; overflow: hidden; pointer-events: none;
+    transition: max-width .22s cubic-bezier(.4, 0, 1, 1), margin-left .22s cubic-bezier(.4, 0, 1, 1), opacity .16s ease-in;
+  }
+  .dynbar .dyn-div--cta { margin-right: 0; }
+  body.side-hidden .dynbar .cta--bar, body.side-hidden .dynbar .dyn-div--cta {
+    max-width: 220px; margin-left: 0; opacity: 1; pointer-events: auto;
+    transition: max-width .5s var(--spring) .08s, margin-left .5s var(--spring) .08s, opacity .25s ease-out .12s;
+  }
+  body.side-hidden .dynbar .dyn-div--cta { margin: 0 4px; }
+}
 .cta--intro { align-self: flex-start; margin-top: 4px; }
 .cta--bar .cta__txt small { display: none; }
 .cta--bar.cta--slot .cta__fold { width: 26px; height: 26px; border-radius: 8px; }
