@@ -1245,24 +1245,71 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
 }
 
 /* ── Exploration: everything we've made, pinned to a board that never ends ── */
-.board { position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; user-select: none; outline: none; background: var(--paper); }
+.board {
+  --dot: color-mix(in srgb, var(--ink) 15%, transparent);
+  position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; user-select: none; outline: none;
+  /* a quiet dotted grid, the surface the work is pinned to; it moves as you drag */
+  background: var(--paper) radial-gradient(circle, var(--dot) 1px, transparent 1.5px) 0 0 / 26px 26px;
+}
 .board[hidden] { display: none; }
 .board.is-panning { cursor: grabbing; }
 .board.is-panning .pin { pointer-events: none; }
 body[data-showing="explore"] .timeline, body[data-showing="explore"] .agenda, body[data-showing="explore"] .side { display: none; }
 .board__col { position: absolute; top: 0; left: 0; will-change: transform; }
-.board__run { display: flex; flex-direction: column; gap: var(--gap); padding-bottom: var(--gap); }
-/* a pin: the work itself, in the same rounded frame as Projects, lifting a little as you reach for it */
+.board__run { display: flow-root; padding-top: 1px; }
+
+/* a pin: a piece of the work, a little askew, hanging from its tape or pin and swinging as the board moves */
 .pin {
-  position: relative; display: block; width: 100%; overflow: hidden; border-radius: 14px;
-  background: color-mix(in srgb, var(--ink) 5%, var(--paper-2));
-  box-shadow: 0 1px 2px rgba(18, 18, 18, .06), 0 10px 30px -18px rgba(18, 18, 18, .35);
-  transition: transform .35s var(--spring), box-shadow .3s;
-  animation: rise .5s var(--ease) both;
+  position: relative; display: block;
+  transform: rotate(calc(var(--r, 0deg) + var(--sway, 0deg)));
+  transform-origin: 50% 0;
+  transition: transform .7s var(--spring), filter .3s;
+  animation: pin-in .6s var(--spring) both;
 }
-.pin::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 6%, transparent); pointer-events: none; }
-.pin img, .pin video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; }
-.pin:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(18, 18, 18, .08), 0 18px 40px -16px rgba(18, 18, 18, .45); }
+@keyframes pin-in { from { opacity: 0; transform: translateY(-10px) rotate(calc(var(--r, 0deg) * 2)) scale(1.04); } }
+.pin__m {
+  position: relative; display: block; width: 100%; overflow: hidden; border-radius: 12px;
+  background: color-mix(in srgb, var(--ink) 5%, var(--paper-2));
+  box-shadow: 0 1px 2px rgba(18, 18, 18, .10), 0 14px 30px -14px rgba(18, 18, 18, .42);
+  transition: box-shadow .3s;
+}
+.pin__m::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 7%, transparent); pointer-events: none; }
+.pin__m img, .pin__m video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; }
+/* reach for one and it straightens, comes forward and lifts off the board */
+.pin:hover, .pin:focus-within { z-index: 3; transform: rotate(0deg) translateY(-6px) scale(1.04); transition: transform .45s var(--spring); }
+.pin:hover .pin__m { box-shadow: 0 2px 6px rgba(18, 18, 18, .12), 0 30px 60px -20px rgba(18, 18, 18, .55); }
+
+/* a strip of tape across the top edge: paper you can half see through */
+.pin__tape {
+  position: absolute; z-index: 2; top: -11px; left: 50%; width: 76px; height: 22px; margin-left: -38px;
+  transform: rotate(var(--tr, 0deg));
+  background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 255, 255, .08) 6px 7px), color-mix(in srgb, #F3EEDC 62%, transparent);
+  box-shadow: 0 1px 2px rgba(18, 18, 18, .16);
+  -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px);
+  clip-path: polygon(0 8%, 4% 0, 8% 10%, 12% 0, 100% 0, 100% 92%, 96% 100%, 92% 90%, 88% 100%, 0 100%);
+}
+/* or a push-pin, in the notes' colours and the studio's orange */
+.pin__push {
+  position: absolute; z-index: 2; top: -7px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .75) 0 18%, transparent 22%), var(--pc);
+  box-shadow: inset 0 -2px 3px rgba(0, 0, 0, .25), 2px 4px 5px -1px rgba(18, 18, 18, .38);
+}
+.pin__push--brand { --pc: var(--brand); }
+.pin__push--yellow { --pc: #E9B90F; }
+.pin__push--blue { --pc: #4C86D9; }
+.pin__push--pink { --pc: #E0559A; }
+.pin__push--green { --pc: #34A35F; }
+
+/* a polaroid: the work in a white frame, the client written underneath */
+.pin--polaroid { padding: 10px 10px 0; border-radius: 4px; background: #FBF9F4; box-shadow: 0 1px 2px rgba(18, 18, 18, .12), 0 16px 32px -14px rgba(18, 18, 18, .45); }
+.pin--polaroid .pin__m { border-radius: 2px; box-shadow: none; }
+.pin--polaroid:hover .pin__m { box-shadow: none; }
+.pin__note { display: block; height: 42px; padding-top: 8px; text-align: center; font: italic 400 19px/1 var(--font-accent); color: #2A2724; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* a sticky note from Stories, pinned between the work */
+.pin--note .card { width: 100%; min-height: 0; aspect-ratio: 1 / var(--tall, .95); margin: 0; overflow: hidden; box-shadow: 0 1px 2px rgba(18, 18, 18, .08), 0 14px 26px -16px rgba(18, 18, 18, .4); }
+.pin--note .card:hover { transform: none; }
+
 /* whose it is, on a strip of frosted glass that rises in on hover */
 .pin__tag {
   position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 1;
@@ -1272,14 +1319,23 @@ body[data-showing="explore"] .timeline, body[data-showing="explore"] .agenda, bo
   opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .3s var(--ease);
   text-align: left; pointer-events: none;
 }
-.pin:hover .pin__tag, .pin:focus-visible .pin__tag { opacity: 1; transform: none; }
+.pin:hover .pin__tag, .pin:focus-within .pin__tag { opacity: 1; transform: none; }
 .pin__tag .fold__av { width: 24px; height: 24px; flex: none; font-size: 10px; color: var(--paper-2); background: var(--ink); box-shadow: none; }
 .pin__tag .fold__mk { height: 11px; width: calc(11px * var(--mk)); }
 .pin__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pin__tag b { font: 500 12px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pin__tag i { font: 400 11px/1.25 var(--font-sans); font-style: normal; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pin__tag i em { font-family: inherit; font-style: inherit; }
+:root[data-theme="dark"] .pin__tape { background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 255, 255, .05) 6px 7px), rgba(236, 228, 205, .30); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .pin__tape { background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 255, 255, .05) 6px 7px), rgba(236, 228, 205, .30); }
+}
 @media (prefers-reduced-motion: reduce) { .pin { animation: none; transition: none; } }
+@media (max-width: 760px) {
+  .pin__tape { width: 54px; margin-left: -27px; height: 18px; top: -9px; }
+  .pin--polaroid { padding: 7px 7px 0; }
+  .pin__note { height: 32px; padding-top: 6px; font-size: 15px; }
+}
 
 /* the bar on the board: the views, a hint, and Work with us, since no sidebar holds it here */
 .dyn-hint { display: none; padding: 0 10px 0 6px; font: 400 13px/1 var(--font-sans); color: var(--muted); white-space: nowrap; }

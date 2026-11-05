@@ -541,53 +541,96 @@
     return out;
   })();
 
-  // columns of pins, each looping top to bottom on its own, the set of them repeating side to side: no edge anywhere
+  // a pin board: the work scattered down columns with room around it, each piece a little askew and held up by tape or a pin,
+  // some as polaroids with the client written under them, and now and then a sticky note from Stories. Every column loops
+  // top to bottom on its own and the set repeats side to side, so there's no edge anywhere
   const board = $('.board');
-  let cam = { x: 0, y: 0 }, cols = [], boardW = 1, built = '';
-  const pinHTML = (p, i) => `<button class="pin" data-pin="${i}" style="aspect-ratio:${p.ar.toFixed(3)}" aria-label="${p.client}: ${strip(p.title)}">
-      ${p.kind === 'video'
-        ? `<video src="${p.src}"${p.poster ? ` poster="${p.poster}"` : ''} muted loop playsinline preload="none"></video>`
-        : `<img src="${p.src}" alt="" loading="lazy" decoding="async">`}
-      <span class="pin__tag">${clientAvatar(p.client)}<span class="pin__who"><b>${p.client}</b><i>${p.title}</i></span></span>
-    </button>`;
+  const NOTES = ALL.filter((e) => e.type === 'testimonial' || (e.type === 'note' && e.highlight && e.photos));
+  // phones have too narrow a column for a note's words, so there the board is the work alone
+  const itemsFor = (phone) => PIECES.flatMap((p, i) => {
+    const note = !phone && i % 11 === 6 && NOTES[Math.floor(i / 11) % NOTES.length];
+    return note ? [{ i }, { note }] : [{ i }];
+  });
+  // the same scatter for everyone: a small seeded random for each slot on the board
+  const jitter = (n, k) => { const x = Math.sin(n * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+  const PUSH = ['brand', 'yellow', 'blue', 'pink', 'green'];
+  let cam = { x: -56, y: -28 }, cols = [], boardW = 1, built = ''; // start a little in, so the first column has air on its left
+  function itemHTML(it, n, cw) {
+    const r = (jitter(n, 1) - 0.5) * 6.5; // −3.25° to 3.25°
+    const hold = jitter(n, 2) < 0.58 ? `<i class="pin__tape" style="--tr:${((jitter(n, 3) - 0.5) * 14).toFixed(1)}deg"></i>`
+      : `<i class="pin__push pin__push--${PUSH[Math.floor(jitter(n, 4) * PUSH.length)]}"></i>`;
+    if (it.note) {
+      const w = Math.round(cw * 0.86), tall = it.note.photos ? 1.32 : 0.95; // a note with prints needs room for them
+      return { h: w * tall, html: `<div class="pin pin--note" style="width:${w}px;--r:${r.toFixed(2)}deg;--tall:${tall}">${cardHTML(it.note)}<i class="pin__push pin__push--${PUSH[n % PUSH.length]}"></i></div>` };
+    }
+    const p = PIECES[it.i];
+    const polaroid = p.kind === 'img' && jitter(n, 5) < 0.26;
+    const w = Math.round(cw * (0.74 + jitter(n, 6) * 0.26));
+    const mw = polaroid ? w - 20 : w;
+    const media = p.kind === 'video'
+      ? `<video src="${p.src}"${p.poster ? ` poster="${p.poster}"` : ''} muted loop playsinline preload="none"></video>`
+      : `<img src="${p.src}" alt="" loading="lazy" decoding="async">`;
+    return {
+      h: mw / p.ar + (polaroid ? 52 : 0),
+      html: `<div class="pin${polaroid ? ' pin--polaroid' : ''}" data-pin="${it.i}" style="width:${w}px;--r:${r.toFixed(2)}deg">
+        <button class="pin__m" style="aspect-ratio:${p.ar.toFixed(3)}" aria-label="${p.client}: ${strip(p.title)}">${media}
+          <span class="pin__tag">${clientAvatar(p.client)}<span class="pin__who"><b>${p.client}</b><i>${p.title}</i></span></span></button>
+        ${polaroid ? `<span class="pin__note">${p.client}</span>` : ''}${hold}
+      </div>`,
+    };
+  }
   const pinClips = new IntersectionObserver((entries) => entries.forEach(({ target, isIntersecting }) => {
     if (isIntersecting && !reduced.matches) target.play().catch(() => {}); else target.pause();
   }), { root: board, threshold: 0.25 });
   function buildBoard() {
     const vw = board.clientWidth || innerWidth, vh = board.clientHeight || innerHeight;
-    const cw = mq.matches ? 150 : 250, gap = mq.matches ? 12 : 20, step = cw + gap;
+    const cw = mq.matches ? 168 : 290, gapX = mq.matches ? 28 : 72, step = cw + gapX;
     const key = `${cw}:${vw}:${vh}`;
     if (key === built) return applyCam();
     built = key;
     // enough columns that one column never shows twice across the screen
     const n = Math.max(mq.matches ? 4 : 8, Math.ceil((vw + step) / step) + 1);
     const heights = Array(n).fill(0), runs = [...Array(n)].map(() => []);
-    PIECES.forEach((p, i) => {
+    itemsFor(mq.matches).forEach((it, k) => {
       const c = heights.indexOf(Math.min(...heights));
-      runs[c].push(i);
-      heights[c] += cw / p.ar + gap;
+      const { h, html } = itemHTML(it, k, cw);
+      // uneven air above each piece, and a nudge off the column's centre
+      const top = Math.round((mq.matches ? 30 : 46) + jitter(k, 7) * (mq.matches ? 26 : 54));
+      const w = Number(html.match(/width:(\d+)px/)[1]);
+      const left = Math.round((cw - w) * jitter(k, 8));
+      runs[c].push(html.replace('style="width:', `style="margin:${top}px 0 0 ${left}px;width:`));
+      heights[c] += top + h;
     });
     boardW = n * step;
     pinClips.disconnect();
     board.innerHTML = runs.map((run, c) => {
       // a column repeats its run as often as it takes to cover the screen and one run more, so the loop never shows its seam
       const copies = Math.max(2, Math.ceil(vh / Math.max(heights[c], 1)) + 1);
-      const one = run.map((i) => pinHTML(PIECES[i], i)).join('');
-      return `<div class="board__col" style="width:${cw}px;--gap:${gap}px">${Array(copies).fill(`<div class="board__run">${one}</div>`).join('')}</div>`;
+      return `<div class="board__col" style="width:${cw}px">${Array(copies).fill(`<div class="board__run">${run.join('')}</div>`).join('')}</div>`;
     }).join('');
     cols = $$('.board__col', board).map((el, c) => ({ el, x: c * step, h: heights[c], off: (c * 211) % Math.max(heights[c], 1) }));
     $$('video', board).forEach((v) => pinClips.observe(v));
     applyCam();
   }
   const wrap = (v, m) => ((v % m) + m) % m;
+  const DOT = 26; // the grid behind the pins moves with them, so it reads as the board itself
   function applyCam() {
     const vw = board.clientWidth, step = cols.length ? boardW / cols.length : 1;
+    board.style.backgroundPosition = `${-wrap(cam.x, DOT)}px ${-wrap(cam.y, DOT)}px`;
     cols.forEach((c) => {
       const x = wrap(c.x - cam.x + step, boardW) - step;
       const shown = x < vw;
       c.el.style.visibility = shown ? '' : 'hidden';
       if (shown) c.el.style.transform = `translate3d(${x}px, ${-wrap(cam.y + c.off, c.h)}px, 0)`;
     });
+  }
+  // the pins swing from their tape as the board moves, the way paper does, and settle when it stops
+  let swayIdle = 0;
+  function sway(vx) {
+    if (reduced.matches) return;
+    board.style.setProperty('--sway', `${clamp(vx * 2.4, -5, 5).toFixed(2)}deg`);
+    clearTimeout(swayIdle);
+    swayIdle = setTimeout(() => board.style.setProperty('--sway', '0deg'), 90);
   }
   // drag it any way, with a little glide when you let go; the wheel and trackpad move it too
   let pan = null, glide = 0, panMoved = false;
@@ -606,6 +649,7 @@
     pan.vx = -dx / dt; pan.vy = -dy / dt;
     pan.x = e.clientX; pan.y = e.clientY; pan.t = now;
     moveBy(-dx, -dy);
+    sway(dx / dt);
   });
   addEventListener('pointerup', () => {
     if (!pan) return;
@@ -619,6 +663,7 @@
       v = { x: v.x * 0.92, y: v.y * 0.92 };
       if (Math.hypot(v.x, v.y) < 0.4) return;
       moveBy(v.x, v.y);
+      sway(-v.x / 16);
       glide = requestAnimationFrame(tick);
     };
     glide = requestAnimationFrame(tick);
@@ -629,6 +674,7 @@
     const k = e.deltaMode === 1 ? 32 : 1;
     // a plain mouse wheel only scrolls one way; holding shift turns it sideways
     e.shiftKey && !e.deltaX ? moveBy(e.deltaY * k, 0) : moveBy(e.deltaX * k, e.deltaY * k);
+    sway(-(e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * k / 24);
   }, { passive: false });
   board.addEventListener('keydown', (e) => {
     const by = { ArrowRight: [160, 0], ArrowLeft: [-160, 0], ArrowDown: [0, 160], ArrowUp: [0, -160] }[e.key];
@@ -1652,7 +1698,7 @@
     }
     if (viewing && t.closest('.viewer__cap')) return;
     if (viewing && t.closest('.viewer')) return closeViewer();
-    const pin = t.closest('.pin');
+    const pin = t.closest('.pin[data-pin]');
     if (pin) return panMoved ? undefined : openPiece(Number(pin.dataset.pin), $('img, video', pin));
     const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img');
     if (pic) return openViewer(pic.getAttribute('src'), pic);
@@ -1691,7 +1737,7 @@
       return requestAnimationFrame(() => openProject(target));
     }
     const card = t.closest('button.card, button.mrow, button[data-day]');
-    if (!card || dragMoved) return;
+    if (!card || dragMoved || panMoved) return;
     const ev = BY_ID[card.dataset.id || card.dataset.day];
     if (ev.type === 'case') return openCase(ev.case, null, card);
     if (ev.type === 'video') return openCase('sidecar', 'video', card, { play: true });
