@@ -484,10 +484,10 @@
   function logosHTML() {
     return `<div class="marquees" role="group" aria-label="Trusted by">${logoRow(TRUSTED.filter((_, i) => i % 2 === 0))}${logoRow(TRUSTED.filter((_, i) => i % 2), true)}</div>`;
   }
-  // the sidebar in two halves: our Stories intro up top with the way in, and everything that backs it up together at the foot;
+  // the sidebar in two halves: our Stories intro up top, the way in right under its title, and everything that backs it up at the foot;
   // the legend is a guide too: reach for Notes or Work and the rest steps back
-  const sideHTML = () => `<div class="side__top">
-      <h1>Our story, <em>by the day</em>.</h1>
+  const sideHTML = () => `<div class="side__top"><h1>Our story, <em>by the day</em>.</h1></div>
+    <div class="side__mid">
       <p>37degree is a design-led growth studio for Tech &amp; AI companies. Notes are how we got here. Work is what we've shipped.</p>
       <div class="legend"><button data-focus="note">${icon.note}Notes</button><button data-focus="work">${FOLDERS ? icon.folder : icon.card}Work</button></div>
     </div>
@@ -917,15 +917,15 @@
     slot: `<i class="cta__fold">${icon.folder}</i><span class="cta__txt"><b>Work with us</b><small>Pick a week for your launch</small></span>${go}`,
     founders: `<span class="cta__faces" aria-hidden="true"><i>${PEOPLE.puru.mono}</i><i>${PEOPLE.haneef.mono}</i></span>Work with us${go}`,
   }[CTA_LOOK] || `Work with us${go}`}</span>`;
-  const ctaIntro = ctaBar.cloneNode(true);
   ctaBar.classList.add('cta--bar');
-  ctaIntro.classList.add('cta--intro');
+  // in the sidebar (and the intro on phones) it's a plain pill right under the title, as on Puru's
+  const ctaIntro = Object.assign(document.createElement('a'), { className: 'btn side__cta', href: MAIL, innerHTML: `Work with us ${icon.arrow}` });
   // the bar's button only steps in once the sidebar, with its own, has slid away
   bar.append(Object.assign(document.createElement('span'), { className: 'dyn-div dyn-div--cta' }), ctaBar);
-  // the sidebar (or on phones the intro) is drawn again with every view, so the button is put back each time
+  // the sidebar (or on phones the intro) is drawn again with every view, so the button is put back each time, under the title
   const placeCta = () => {
-    const at = $(mq.matches ? '.ag-intro' : '.side__top');
-    if (at) at.insertBefore(ctaIntro, $('.legend', at));
+    const title = $(mq.matches ? '.ag-intro h1' : '.side__top h1');
+    if (title) title.after(ctaIntro);
   };
 
   /* ── Filter: Projects only ────────────────────────── */
@@ -1657,13 +1657,13 @@
     const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img');
     if (pic) return openViewer(pic.getAttribute('src'), pic);
     // "Work with us" opens the new-event invite; the mailto stays as the fallback
-    const cta = t.closest('.cta, .pp-btn');
+    const cta = t.closest('.cta, .side__cta, .pp-btn');
     if (cta) {
       e.preventDefault();
       const slot = ALL.find((x) => x.type === 'slot');
       closeAll(true);
       // it lifts off the button you pressed, or from inside a sheet, off the one in the bar
-      return openNote(slot, cta.classList.contains('cta') ? cta : mq.matches || document.body.classList.contains('side-hidden') ? ctaBar : ctaIntro);
+      return openNote(slot, cta.matches('.cta, .side__cta') ? cta : mq.matches || document.body.classList.contains('side-hidden') ? ctaBar : ctaIntro);
     }
     const v = t.closest('[data-view]');
     if (v) return setView(v.dataset.view);
