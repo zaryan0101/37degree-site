@@ -50,7 +50,7 @@ The calendar used to come from a Notion database. That sync is gone, so edits in
 
 ## Files
 
-- `index.html`, `css/site.css`, `js/app.js`: v3, the main site. Work shows as glass folders tinted in the note pastels; add `?cards` to see the white work cards instead
+- `index.html`, `css/site.css`, `js/app.js`: v3, the main site. Work shows as glass folders tinted in the note pastels
 - `v2/`: the previous main site (white work cards), a frozen copy of its page, styles and script that reads the same content
 - `content/calendar/`: **the calendar's cards**, edited in Pages CMS and built into `js/cms.js`
 - `js/data.js`: the long-form case studies, people, testimonials and logos, plus fallback events, shared by every version
