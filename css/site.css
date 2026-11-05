@@ -407,8 +407,41 @@ body.draft .is-tbc { outline: 1.5px dashed var(--brand); outline-offset: 2px; }
 .is-compact .card__date { margin-top: 2px; }
 .is-compact .card--quote { font-size: 16px; }
 .is-compact .num { font-size: 18px !important; }
-/* Projects: a company's column is a Stories column wide, growing by one when its cards run out of rows */
-.col.is-project { flex-basis: calc(var(--col) * var(--lanes, 1)); }
+/* Projects: a company's column is two Stories columns wide, so its work shows big and the cards beside it at their usual size;
+   it grows by that again when its cards run out of rows. The pauses and the open slot keep one Stories column */
+.col.is-project { flex-basis: calc(var(--col) * 2 * var(--lanes, 1)); }
+
+/* a tile: the work itself, its clip or its real images, with what it is and how to open it underneath */
+.card.card--tile { display: flex; flex-direction: column; gap: 0; padding: 0; background: none; border: 0; box-shadow: none; text-align: left; overflow: visible; }
+.tile__m { position: relative; display: block; flex: 1; min-height: 0; overflow: hidden; border-radius: 20px; background: color-mix(in srgb, var(--ink) 5%, var(--paper-2)); }
+.tile__m::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 6%, transparent); pointer-events: none; }
+.tile__m img, .tile__m video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; transition: opacity .45s, transform .8s var(--ease); }
+.tile__m video { object-position: center; }
+/* a second image waits behind the first and comes up on hover */
+.tile__m img + img { opacity: 0; }
+.tile__m img:nth-of-type(n + 3) { display: none; }
+.card--tile:hover .tile__m img:first-of-type:not(:last-of-type) { opacity: 0; }
+.card--tile:hover .tile__m img + img { opacity: 1; }
+.card--tile:hover .tile__m img, .card--tile:hover .tile__m video { transform: scale(1.012); }
+/* posters and phone screens sit side by side, whole */
+.card--tile .tile__m.is-set img { display: block; top: 12%; height: 76%; left: 5%; width: 27%; object-fit: contain; object-position: center; opacity: 1; transform: none; }
+.card--tile .tile__m.is-set img:nth-of-type(2) { left: 36.5%; }
+.card--tile .tile__m.is-set img:nth-of-type(3) { left: 68%; }
+.card--tile .tile__m.is-set img:first-of-type:nth-last-of-type(2) { left: 7%; width: 41%; }
+.card--tile .tile__m.is-set img:nth-of-type(2):last-of-type { left: 52%; width: 41%; }
+.card--tile .tile__m.is-set img:only-of-type { left: 10%; width: 80%; }
+.tile__cap { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: 32px; min-width: 0; padding: 16px 2px 0; }
+.tile__about { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.tile__title { font: 500 15px/1.3 var(--font-sans); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; }
+.tile__open { display: flex; align-items: center; gap: 8px; font: 400 13px/1.5 var(--font-sans); color: var(--muted); white-space: nowrap; transition: color .2s; }
+.tile__open i { display: grid; place-items: center; transition: transform .25s var(--ease); }
+.tile__open svg { width: 13px; height: 13px; }
+.card--tile:hover .tile__open { color: var(--ink); }
+.card--tile:hover .tile__open i { transform: translateX(3px); }
+.tile__figs { display: flex; flex: none; gap: 32px; }
+.tile__fig { display: flex; flex-direction: column; gap: 5px; }
+.tile__fig i { font: 400 12px/1.2 var(--font-sans); font-style: normal; color: var(--muted); }
+.tile__fig b { font: 300 20px/1.15 var(--font-sans); letter-spacing: -0.025em; color: var(--ink); white-space: nowrap; }
 .col.is-project .col-head .d { max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* a pause between companies: a small label in place of a company's name; its proof is about all the work, so it carries no date */
 .col.is-filler .card__date { display: none; }
@@ -918,6 +951,9 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   .ag-cards .card--slot { min-height: 120px; }
   .ag-cards .card.has-photos { min-height: 210px; }
   .minimap, .dyn-seg + .dyn-div { display: none; }
+  /* phones: a tile stands as tall as its work, with its caption under it */
+  .ag-cards .card--tile .tile__m { flex: none; aspect-ratio: 16 / 10; }
+  .ag-cards .tile__cap { flex-direction: column; gap: 12px; padding-top: 12px; }
   /* phones: the pill in the bar keeps to its icon */
   .filter--sprout .filter__cur, .filter--sprout .filter__caret { display: none; }
   /* the list and the open island hang from the screen's edge, not the pill, so they never run off it */

@@ -138,12 +138,63 @@
       <div class="fold__label"><div class="card__title">${title}</div><div class="card__date">${sub}</div></div>`;
   }
 
+  /* ── Tiles: the work itself, in Projects ─────────── */
+  // a project shows its clip or its real images, never the stand-ins in assets/img/mock; one without either keeps its folder
+  function mediaOf(ev) {
+    if (ev.type === 'case') return { pics: CASES[ev.case].stack || [] };
+    const pics = (ev.photos || []).filter((src) => !src.includes('/img/mock/'));
+    const clip = ev.clips && ev.clips[0];
+    return clip ? { clip, poster: pics.find((src) => /-still\.jpg$/.test(src)) } : { pics: pics.filter((src) => !/-still\.jpg$/.test(src)) };
+  }
+  const isTile = (ev) => view === 'projects' && (ev.type === 'case' || ev.type === 'project') && (() => { const m = mediaOf(ev); return !!(m.clip || m.pics.length); })();
+  // "Omnipair: an OKLCH brand system" under the name Omnipair only needs the second half
+  function workTitle(title, client) {
+    const t = strip(title), at = t.indexOf(': ');
+    const head = t.slice(0, at).toLowerCase(), first = (client || '').toLowerCase().split(/[\s,·]/)[0];
+    if (at < 0 || !first || !head.startsWith(first) || head.includes('×')) return t;
+    const rest = t.slice(at + 2);
+    return rest[0].toUpperCase() + rest.slice(1);
+  }
+  // under the work: public facts about the client when we have them, else what we did; two at most, to glance at
+  function factsOf(ev) {
+    const facts = [...(ev.facts || []), ...((window.DUMMY_FACTS || {})[ev.id] || [])];
+    const tags = ev.type === 'case' ? CASE_TAGS[ev.case] || [] : ev.services || [];
+    return facts.length ? facts.slice(0, 2) : tags.length ? [{ label: 'Scope', value: tags.slice(0, 2).join(', ') }] : [];
+  }
+  function tileHTML(ev) {
+    const C = ev.type === 'case' && CASES[ev.case];
+    const m = mediaOf(ev);
+    const media = m.clip
+      ? `<video src="${m.clip}"${m.poster ? ` poster="${m.poster}"` : ''} muted loop playsinline preload="metadata"></video>`
+      : m.pics.slice(0, 3).map((src) => `<img src="${src}" alt="" loading="lazy">`).join('');
+    const title = C ? strip(C.title) : workTitle(ev.title, ev.client);
+    return `<span class="tile__m">${media}</span>
+      <span class="tile__cap"><span class="tile__about"><span class="tile__title">${title}</span><span class="tile__open"><span>${C ? 'Read case study' : 'View project'}</span><i>${icon.arrow}</i></span></span>
+      <span class="tile__figs">${factsOf(ev).map((f) => `<span class="tile__fig"><i>${f.label}</i><b>${f.value}</b></span>`).join('')}</span></span>`;
+  }
+  // clips play while they're in view; posters and phone screens don't crop into a landscape tile, so they sit side by side
+  const tileClips = new IntersectionObserver((entries) => entries.forEach(({ target, isIntersecting }) => {
+    if (isIntersecting && !reduced.matches) target.play().catch(() => {}); else target.pause();
+  }), { threshold: 0.35 });
+  function wireTiles(root) {
+    $$('.tile__m', root).forEach((m) => {
+      const v = $('video', m);
+      if (v) return tileClips.observe(v);
+      const img = $('img', m);
+      if (!img) return;
+      const shape = () => m.classList.toggle('is-set', img.naturalHeight > img.naturalWidth * 0.8);
+      img.complete && img.naturalWidth ? shape() : img.addEventListener('load', shape, { once: true });
+    });
+  }
+
   function cardHTML(ev) {
     const p = parse(ev.date);
     const date = `<div class="card__date">${p.d} ${MONTHS[p.m - 1]}</div>`;
     const work = isWork(ev);
     let inner = '';
-    if (isFolder(ev)) {
+    const tile = isTile(ev);
+    if (tile) inner = tileHTML(ev);
+    else if (isFolder(ev)) {
       const when = `${p.d} ${MONTHS[p.m - 1]}`;
       if (ev.type === 'case') {
         const C = CASES[ev.case];
@@ -216,7 +267,7 @@
     }
     const tag = clickable(ev) ? 'button' : 'div';
     const kind = ev.type === 'quote' || ev.type === 'slot' ? '' : work ? 'work-card' : 'note-card';
-    const cls = ['card', kind, tintOf(ev), `card--${ev.type}`, ev.type === 'project' && 'card--case', isFolder(ev) && 'card--folder', workNote(ev) && 'work-card--note', ev.photos && !isFolder(ev) && 'has-photos', visited.has(ev.id) && 'is-visited', ev.tbc && 'is-tbc'].filter(Boolean).join(' ');
+    const cls = ['card', kind, tintOf(ev), `card--${ev.type}`, tile ? 'card--tile' : ev.type === 'project' && 'card--case', !tile && isFolder(ev) && 'card--folder', workNote(ev) && 'work-card--note', ev.photos && !isFolder(ev) && 'has-photos', visited.has(ev.id) && 'is-visited', ev.tbc && 'is-tbc'].filter(Boolean).join(' ');
     const extra = ev.case ? ` data-case="${ev.case}"` : '';
     const label = tag === 'button' ? ` aria-label="${labelFor(ev)}"` : '';
     return `<${tag} class="${cls}" data-id="${ev.id}"${extra}${label}>${inner}</${tag}>`;
@@ -246,23 +297,26 @@
     if (p.y === q.y && p.m === q.m) return `${MON[p.m - 1]} ${p.y}`;
     return p.y === q.y ? `${MON[p.m - 1]} – ${MON[q.m - 1]} ${q.y}` : `${MON[p.m - 1]} ${p.y} – ${MON[q.m - 1]} ${q.y}`;
   }
-  // the filter in the top strip: a card answers to its own services, or else to its project's
+  // the filter: Puru's categories, opening on Selected work, the highlighted cut. A card answers to its own services,
+  // or else to its project's; the case studies live in the site code, so their services do too
   const FILTERS = [
+    { key: 'selected', label: 'Selected work', test: (ev, p) => !!p.highlight },
     { key: 'all', label: 'All work' },
     { key: 'case', label: 'Case studies', test: (ev, p) => p.type === 'case' },
-    { key: 'launch', label: 'Launch videos', tags: ['Video', 'Motion'] },
+    { key: 'web', label: 'Websites', tags: ['Website'] },
     { key: 'brand', label: 'Branding', tags: ['Branding', 'Naming', 'Strategy'] },
-    { key: 'web', label: 'Websites & product', tags: ['Website', 'Web app', 'Product design'] },
+    { key: 'video', label: 'Video &amp; motion', tags: ['Video', 'Motion'] },
+    { key: 'product', label: 'Product &amp; web apps', tags: ['Product design', 'Web app'] },
+    { key: 'campaign', label: 'Campaigns &amp; events', tags: ['Campaign', 'Event', 'Print'] },
     { key: 'deck', label: 'Pitch decks', tags: ['Pitch deck'] },
-    { key: 'event', label: 'Events', tags: ['Event'] },
-    { key: 'campaign', label: 'Campaigns', tags: ['Campaign', 'Print', 'Copy'] },
   ];
-  let filter = 'all';
+  const CASE_TAGS = { kampanion: ['Product design'], sidecar: ['Branding', 'Website', 'Event', 'Print', 'Video'], deccan: ['Website'] };
+  let filter = 'selected';
   function inFilter(ev, p, key = filter) {
     const f = FILTERS.find((x) => x.key === key);
     if (f.test) return f.test(ev, p);
     if (!f.tags) return true;
-    const tags = ev.services && ev.services.length ? ev.services : p.services || [];
+    const tags = ev.services && ev.services.length ? ev.services : p.services && p.services.length ? p.services : CASE_TAGS[p.case] || [];
     return tags.some((t) => f.tags.includes(t));
   }
   // how many folders each filter shows; a filter with none isn't offered
@@ -313,9 +367,9 @@
       return { key: g.key, name: g.name, sub: monthSpan(date, end), events: g.events.map((x) => x.ev), date, end, isProject: true };
     }).sort((a, b) => (a.end > b.end ? -1 : a.end < b.end ? 1 : 0));
     // pauses between companies holding the studio's own proof, at chosen moments: after the newest few,
-    // and just before the case studies. They're about all the work, so a filter leaves them out
-    if (filter === 'all') {
-      const filler = (key, label, ev) => ev && { key, name: label, sub: '', events: [ev], date: ev.date, end: ev.date, isProject: true, isFiller: true };
+    // and just before the case studies. They're about all the work, so a category filter leaves them out
+    if (filter === 'selected' || filter === 'all') {
+      const filler = (key, label, ev) => ev && { key, name: label, sub: '', events: [ev], date: ev.date, end: ev.date, isProject: true, isFiller: true, narrow: true };
       const count = filler('so-far', 'So far', ALL.find((e) => e.type === 'milestone' && e.metric && !projectOf(e)));
       const trusted = filler('trusted', 'Trusted by', ALL.find((e) => e.type === 'logos'));
       const firstCase = cols.findIndex((c) => c.events[0].type === 'case'); // the first company that leads with a case study
@@ -324,7 +378,7 @@
     }
     // the open slot comes last, as Today does in Stories: the next company could be yours
     const slot = ALL.find((e) => e.type === 'slot');
-    if (slot) cols.push({ key: 'next', name: 'Your company', sub: 'Next up', events: [slot], date: slot.date, end: slot.date, isProject: true });
+    if (slot) cols.push({ key: 'next', name: 'Your company', sub: 'Next up', events: [slot], date: slot.date, end: slot.date, isProject: true, isFiller: false, narrow: true });
     return cols;
   }
 
@@ -355,6 +409,7 @@
   // cards without a set row start a little lower in some columns, so the week reads staggered like a real calendar
   const STAGGER = [1, 2, 1, 3];
   function spanOf(ev) {
+    if (isTile(ev)) return 5;
     const base = ev.type === 'person' || ev.type === 'testimonial' ? 2 : ev.span || DEFAULT_SPAN[ev.type] || 2;
     return Math.min(ev.photos ? Math.max(base, ev.type === 'project' ? 4 : 3) : base, ROWS);
   }
@@ -377,8 +432,8 @@
     items.forEach((it) => { it.solo = !items.some((o) => o !== it && o.row < it.row + it.span && it.row < o.row + o.span); });
     return { items, lanes: lanesEnd.length };
   }
-  // a company in Projects is sized the way a busy day is in Stories: its work (folders, and its quote) at the column's full
-  // width, the cards around it smaller, two side by side at half width; rows that run out carry on in another column
+  // a company in Projects is sized the way a busy day is in Stories: its work (tiles, folders, and its quote) across the column,
+  // the cards around it at their usual size, two side by side in its halves; rows that run out carry on in another column
   // beside it, starting at the next 1-2-1-3 height
   function placeCompany(events, idx = 0) {
     const start = (c) => STAGGER[(idx + c) % STAGGER.length];
@@ -391,7 +446,8 @@
       const band = mate ? Math.max(span, spanOf(mate)) : span;
       if (row + band - 1 > ROWS && row > start(col)) { col++; row = start(col); }
       const r = row + band - 1 > ROWS ? Math.max(1, ROWS - band + 1) : row;
-      items.push({ ev, row: r, span, col, half: mate ? 0 : -1 });
+      // the work spans the column; any other card keeps its usual size, half of it, even without a card beside it
+      items.push({ ev, row: r, span, col, half: wide(ev) ? -1 : 0 });
       if (mate) { items.push({ ev: mate, row: r, span: spanOf(mate), col, half: 1 }); i++; }
       row = r + band;
     }
@@ -452,9 +508,12 @@
       body = monthHTML(c);
     } else if (c.isProject) {
       const { items, cols } = placeCompany(c.events, idx);
-      style = ` style="--lanes:${cols}"`;
-      body = `<div class="col-body" style="grid-template-columns:repeat(${cols * 2}, minmax(0, 1fr))">${items.map((it) =>
-        cardHTML(it.ev).replace(/^<(\w+) /, `<$1 style="grid-row:${it.row} / span ${it.span};grid-column:${it.half < 0 ? `${it.col * 2 + 1} / span 2` : it.col * 2 + 1 + it.half}" `)).join('')}</div>`;
+      // a column holding only one stack of cards, nothing across it, is a single Stories column wide; the others two
+      const wide = [...Array(cols)].map((_, k) => items.some((it) => it.col === k && it.half !== 0));
+      const at = wide.reduce((a, w, k) => [...a, a[k] + (w ? 2 : 1)], [0]);
+      style = ` style="--lanes:${c.narrow ? 0.5 : at[cols] / 2}"`;
+      body = `<div class="col-body" style="grid-template-columns:repeat(${at[cols]}, minmax(0, 1fr))">${items.map((it) =>
+        cardHTML(it.ev).replace(/^<(\w+) /, `<$1 style="grid-row:${it.row} / span ${it.span};grid-column:${it.half < 0 ? `${at[it.col] + 1} / span 2` : at[it.col] + 1 + it.half}" `)).join('')}</div>`;
     } else {
       const { items, lanes } = placeDay(c.events, idx);
       const gridCols = lanes > 1 ? ` style="grid-template-columns:repeat(${lanes}, minmax(0, 1fr))"` : '';
@@ -494,6 +553,7 @@
       columnsFor(view).map((c, i) => colHTML(c, i)).join('') +
       `<section class="col col--end"><div class="col-head"></div>${outroHTML()}</section>`;
     placeCta();
+    wireTiles(track);
     layoutBars();
     syncBar();
     buildMinimap();
@@ -557,6 +617,7 @@
     }
     closeDay();
     agenda.innerHTML = html + `<div class="ag-outro">${outroHTML()}</div>`;
+    wireTiles(agenda);
     placeCta();
     syncBar();
   }
@@ -731,10 +792,12 @@
     filterEl.hidden = view !== 'projects';
     if (filterEl.hidden) return toggleFilter(false);
     $$('.filter__opts [data-filter]', filterEl).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.filter === filter)));
-    filterEl.classList.toggle('is-on', filter !== 'all');
+    filterEl.classList.toggle('is-on', filter !== 'selected');
     // the pill says what's showing; once a filter is on, a small × goes back to all the work
     const cur = $('.filter__cur', filterEl);
-    if (cur) cur.innerHTML = filter === 'all' ? 'All work' : `${FILTERS.find((f) => f.key === filter).label}<span class="filter__clear" data-filter="all" aria-label="Show all work">${FILTER_ICON.x}</span>`;
+    // Selected work is where Projects rests; any other filter shows a small × back to it
+    const label = FILTERS.find((f) => f.key === filter).label;
+    if (cur) cur.innerHTML = filter === 'selected' ? label : `${label}<span class="filter__clear" data-filter="selected" aria-label="Back to selected work">${FILTER_ICON.x}</span>`;
   }
   function toggleFilter(on = !filterEl.classList.contains('is-open')) {
     filterEl.classList.toggle('is-open', on);
