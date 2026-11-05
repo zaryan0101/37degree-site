@@ -170,7 +170,6 @@ em { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
 .filter--sprout .filter__opts button { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; border-radius: var(--r-inner); color: var(--ink); text-align: left; }
 .filter--sprout .filter__opts button:hover, .filter--sprout .filter__opts button[aria-checked="true"] { background: var(--paper); }
 
-
 /* a pill growing out of the Projects button in the bottom bar, its list opening upward */
 .filter--sprout { margin: 0 0 0 2px; animation: none; }
 .filter--sprout .filter__btn { height: 30px; padding: 0 10px; box-shadow: none; background: var(--paper); animation: sprout .45s var(--spring); }
@@ -178,7 +177,6 @@ em { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
 .filter--sprout .filter__btn { overflow: hidden; }
 .filter--sprout .filter__opts { bottom: calc(100% + 14px); left: 50%; translate: -50% 6px; transform-origin: bottom center; }
 .filter--sprout.is-open .filter__opts { translate: -50% 0; }
-
 
 /* ── Timeline ───────────────────────────────────────── */
 .stage { position: fixed; inset: var(--top) 0 0 0; }
@@ -331,18 +329,10 @@ button.card:hover .stack img:nth-child(2) { transform: rotate(7deg) translate(8p
 
 body.draft .is-tbc { outline: 1.5px dashed var(--brand); outline-offset: 2px; }
 
-/* ── Intro + ends ──────────────────────────────────── */
-.col--intro { flex-basis: 340px; }
-.intro { padding: 36px 32px; display: flex; flex-direction: column; gap: 14px; }
-.intro h1 { margin: 0; font: 300 30px/1.12 var(--font-sans); letter-spacing: -0.02em; }
-.intro p { margin: 0; font: 400 14px/1.55 var(--font-sans); color: var(--muted); max-width: 270px; }
 .legend { display: flex; gap: 14px; margin-top: 6px; font: 500 12px/1 var(--font-sans); color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend svg { width: 16px; height: 16px; flex: none; }
-/* who we've worked with, under the legend: two to a row, in the same tiles as the trusted-by note */
-.col--intro { display: flex; flex-direction: column; min-width: 0; }
-/* the intro is as tall as the screen, not as the tallest column, so the clients sit in the same place in every view */
-.col--intro .intro { flex: none; height: calc(100vh - var(--top) - var(--head)); }
+
 /* the clients, at the foot of the intro: one continuous row sliding past, fading out at both ends */
 .trusted { display: flex; flex-direction: column; gap: 14px; margin-top: auto; padding: 28px 0 26px; }
 .trusted__label { font: 500 11px/1 var(--font-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
@@ -378,66 +368,6 @@ body.draft .is-tbc { outline: 1.5px dashed var(--brand); outline-offset: 2px; }
 .outro small { font: 400 12px/1.5 var(--font-sans); color: var(--muted); }
 .outro small a { color: var(--muted); }
 
-/* ── Zoom levels ───────────────────────────────────── */
-.col.is-month { flex-basis: calc(var(--col) * var(--lanes, 1)); }
-.col-body.is-compact { grid-template-rows: repeat(var(--crows, 7), 72px); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
-.is-compact .card { justify-content: center; gap: 2px; padding: 10px 12px; }
-.is-compact .card .stack, .is-compact .card .thumb, .is-compact .card .poster, .is-compact .card .logos,
-.is-compact .card q, .is-compact .card .by, .is-compact .card .frame, .is-compact .card .kicker, .is-compact .card .case-top, .is-compact .card--slot p { display: none; }
-.is-compact .card__title { font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.is-compact .card__date { margin-top: 2px; }
-.is-compact .card--quote { font-size: 16px; }
-.is-compact .num { font-size: 18px !important; }
-
-/* Months: a month calendar, the month's moment, then the agenda */
-.col.is-month { flex-basis: 300px; display: flex; flex-direction: column; }
-.mbody {
-  flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none;
-  display: flex; flex-direction: column; gap: 14px;
-  padding: calc(var(--allday) + 12px) 14px 96px;
-}
-.mbody::-webkit-scrollbar { display: none; }
-.mcal { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px; text-align: center; padding: 10px 6px; border-radius: var(--r-card); background: var(--paper-2); border: 1px solid var(--line-2); }
-.mcal__w { font: 600 10px/1 var(--font-sans); color: var(--faint); padding: 2px 0 8px; }
-.mcal__d {
-  position: relative; z-index: 0; height: 28px;
-  display: grid; place-items: center;
-  font: 500 12px/1 var(--font-sans); color: var(--muted);
-}
-.mcal__d::before {
-  content: ""; position: absolute; z-index: -1; left: 50%; top: 50%;
-  width: 25px; height: 25px; margin: -12.5px 0 0 -12.5px; border-radius: var(--r-pill);
-  transition: transform .3s var(--spring);
-}
-.mcal__d.in-range { background: color-mix(in srgb, var(--ink) 6%, transparent); }
-.mcal__d.is-note { color: var(--fg); font-weight: 600; }
-.mcal__d.is-note::before { background: var(--bg); }
-.mcal__d.is-work { color: var(--paper-2); font-weight: 600; }
-.mcal__d.is-work::before { background: var(--ink); }
-.mcal__d.is-today { color: var(--brand); font-weight: 600; }
-.mcal__d.is-today::before { box-shadow: inset 0 0 0 1.5px var(--brand); }
-button.mcal__d:hover::before { transform: scale(1.18); }
-.mhero { height: 196px; flex: none; }
-.mhero .card { height: 100%; margin: 0; }
-.mhero .card--slot { height: 150px; }
-.mhero:has(.card--slot) { height: auto; }
-.msum { font: 500 11px/1 var(--font-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--faint); padding: 0 4px; }
-.mlist { display: grid; gap: 2px; margin-top: -6px; }
-.mrow {
-  display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 10px;
-  padding: 9px 10px; border-radius: 10px; text-align: left;
-  font: 500 13px/1.3 var(--font-sans); color: var(--ink);
-  transition: background .2s, opacity .3s;
-}
-button.mrow:hover { background: var(--paper-2); }
-.mrow i { width: 8px; height: 8px; border-radius: var(--r-pill); background: var(--fg, var(--line)); }
-.mrow.is-work i { border-radius: 2px; background: var(--ink); }
-.mrow .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mrow .d { font: 500 11px/1 var(--font-sans); color: var(--muted); }
-.mrow.is-visited .t { opacity: .5; }
-.mrow.is-lifted, .mcal__d.is-lifted { opacity: 0; }
-.mquote { padding: 4px 10px; font: 300 16px/1.25 var(--font-sans); letter-spacing: -0.02em; color: var(--ink); }
-
 /* ── Bottom bar: CTA · zoom · where you are ───────────── */
 .dynbar {
   position: fixed; left: 50%; bottom: 18px; z-index: 75;
@@ -470,29 +400,6 @@ button.mrow:hover { background: var(--paper-2); }
 .cta:hover .cta__go { background: var(--brand); color: #fff; }
 .cta:hover .cta__go svg { transform: translateX(1.5px); }
 
-/* 2 · brand: the studio's orange, as on 37degr.ee */
-.cta--brand { background: none; border-color: transparent; padding: 0; box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 32%, transparent); }
-.cta--brand .cta__in { height: 38px; padding: 0 5px 0 18px; gap: 10px; background: var(--brand); color: #fff; }
-.cta--brand .cta__go { width: 28px; height: 28px; background: #fff; color: var(--brand); }
-.cta--brand:hover .cta__in { background: color-mix(in srgb, var(--brand) 88%, #000); }
-.cta--brand:hover .cta__go { background: #fff; color: var(--brand); }
-
-/* 3 · the open slot: the empty folder waiting for yours, and what it's for */
-.cta--slot .cta__in { height: auto; padding: 4px 4px 4px 4px; gap: 10px; background: none; color: var(--ink); }
-.cta__fold { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; border: 1px dashed var(--line); background: var(--paper); color: var(--muted); }
-.cta__fold svg { width: 16px; height: 16px; }
-.cta__txt { display: flex; flex-direction: column; gap: 4px; padding-right: 6px; }
-.cta__txt b { font: 500 13px/1 var(--font-sans); }
-.cta__txt small { font: 400 11px/1 var(--font-sans); color: var(--muted); }
-.cta--slot .cta__go { width: 30px; height: 30px; background: var(--ink); color: var(--paper-2); }
-.cta--slot:hover .cta__fold { border-color: var(--brand); color: var(--brand); }
-
-/* 4 · the founders: you're talking to Puru and Haneef */
-.cta--founders .cta__in { padding-left: 4px; }
-.cta__faces { display: inline-flex; }
-.cta__faces i { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: var(--r-pill); background: var(--paper-2); color: var(--ink); box-shadow: 0 0 0 2px var(--ink); font: 600 9px/1 var(--font-sans); font-style: normal; }
-.cta__faces i + i { margin-left: -3px; }
-
 /* its places: the top strip, the end of the bottom bar, the intro under the line about the studio */
 .cta--bar { padding: 0; background: none; border: 0; box-shadow: none; }
 /* while the sidebar shows its own "Work with us", the bar keeps to the views; the button slides in as the sidebar slides away */
@@ -508,11 +415,7 @@ button.mrow:hover { background: var(--paper-2); }
   }
   body.side-hidden .dynbar .dyn-div--cta { margin: 0 4px; }
 }
-.cta--bar .cta__txt small { display: none; }
-.cta--bar.cta--slot .cta__fold { width: 26px; height: 26px; border-radius: 8px; }
-.cta--bar.cta--slot .cta__go { width: 26px; height: 26px; }
-.cta--bar.cta--brand .cta__in { height: 32px; }
-.cta--bar.cta--brand .cta__go { width: 24px; height: 24px; }
+
 .dyn-div { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .dyn-seg { position: relative; display: flex; }
 .dyn-seg > button {
@@ -1039,18 +942,7 @@ button.card--folder:hover .fold__front { transform: perspective(520px) rotateX(-
 }
 button.card--slot.card--folder:hover .plus { background: var(--brand); border-color: var(--brand); color: #fff; transform: rotate(90deg); }
 
-/* in a month's hero the folder sizes by the column's width, not a fixed height, so it keeps its proportions */
-.mhero:has(.card--folder) { height: auto; }
-.mhero .card { width: 100%; } /* cards are buttons, which shrink to their content unless told otherwise */
-.mhero .card.card--folder { height: auto; }
-.mhero .card--folder .fold { flex: none; width: calc(var(--fold-w) + 24px); height: auto; min-height: 0; aspect-ratio: 1.08; } /* a month's moment stands taller: the flat shape read as a strip in the narrow column */
-
-/* tight rows: fall back to a plain card */
-.is-compact .card.card--folder { background: var(--paper-2); border: 1px solid var(--line-2); padding: 10px 12px; justify-content: center; }
-.is-compact .card--folder .fold { display: none; }
-.is-compact .card--folder .fold__label { text-align: left; padding: 0; }
-.is-compact .card--folder .fold__label .card__date { display: none; }
-
+ 
 
 /* with folders, work that isn't a folder (moments, steps, milestones) is a note, in its tint */
 .work-card.work-card--note { background: var(--bg); color: var(--fg); border-color: transparent; }

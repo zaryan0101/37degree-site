@@ -30,11 +30,11 @@
   if (new URLSearchParams(location.search).has('draft')) document.body.classList.add('draft');
 
   /* ── Data ─────────────────────────────────────────── */
-  // content comes from the Notion "Website calendar" via js/cms.js; data.js EVENTS is the offline fallback
+  // content comes from the Pages CMS cards via js/cms.js; data.js EVENTS is the offline fallback
   const normalize = (ev) => (ev.type === 'step' && ev.section === 'video' && CASES[ev.case] && CASES[ev.case].video
     ? { ...ev, type: 'video', src: CASES[ev.case].video, poster: CASES[ev.case].cover } : ev);
   const SOURCE = window.CMS && window.CMS.events && window.CMS.events.length ? window.CMS.events : EVENTS;
-  const ALL = [...SOURCE.map(normalize), { id: 'open-slot', date: TODAY, type: 'slot', row: 2, span: new URLSearchParams(location.search).has('folders') ? 4 : 3, highlight: true, title: 'this slot is open' }]
+  const ALL = [...SOURCE.map(normalize), { id: 'open-slot', date: TODAY, type: 'slot', row: 2, span: 3, highlight: true, title: 'this slot is open' }]
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   const BY_ID = Object.fromEntries(ALL.map((e) => [e.id, e]));
   const CASE_ORDER = Object.keys(CASES).sort((a, b) => (CASES[a].start < CASES[b].start ? -1 : 1));
@@ -44,7 +44,7 @@
   const isWork = (ev) => WORK_TYPES.includes(ev.type) || !!ev.case;
   const isProject = (ev) => ev.type === 'project' || ev.type === 'moment';
 
-  // people and testimonials arrive inline from Notion, or by key from data.js
+  // people and testimonials arrive inline from the CMS, or by key from data.js
   const personOf = (ev) => {
     if (typeof ev.who !== 'object') return PEOPLE[ev.person];
     const known = PEOPLE[(ev.who.short || '').toLowerCase()] || {};
@@ -87,7 +87,6 @@
     arrow: '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z"/></svg>',
     note: '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,160l-56,56V160Z" opacity="0.2"/><path d="M88,96a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H96A8,8,0,0,1,88,96Zm8,40h64a8,8,0,0,0,0-16H96a8,8,0,0,0,0,16Zm32,16H96a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM224,48V156.69A15.86,15.86,0,0,1,219.31,168L168,219.31A15.86,15.86,0,0,1,156.69,224H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32H208A16,16,0,0,1,224,48ZM48,208H152V160a8,8,0,0,1,8-8h48V48H48Zm120-40v28.7L196.69,168Z"/></svg>',
     folder: '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,88V200.89a7.11,7.11,0,0,1-7.11,7.11H40a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H93.33a8,8,0,0,1,4.8,1.6L128,80h88A8,8,0,0,1,224,88Z" opacity="0.2"/><path d="M216,72H130.67L102.93,51.2a16.12,16.12,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V200a16,16,0,0,0,16,16H216.89A15.13,15.13,0,0,0,232,200.89V88A16,16,0,0,0,216,72Zm0,128H40V64H93.33L123.2,86.4A8,8,0,0,0,128,88h88Z"/></svg>',
-    card: '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,56V200a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H216A8,8,0,0,1,224,56Z" opacity="0.2"/><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200ZM80,84A12,12,0,1,1,68,72,12,12,0,0,1,80,84Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,120,84Z"/></svg>',
     x: '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m2 2 8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
     play: '<svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1.2v7.6L8.6 5z" fill="currentColor"/></svg>',
     plus: '<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h10M6 1v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
@@ -97,7 +96,7 @@
   // notes are sticky notes: each kind gets its own pastel (an event can set `color` to override)
   const TINT = { note: 'yellow', person: 'blue', testimonial: 'pink', milestone: 'green', logos: 'purple', snippets: 'orange' };
   // with folders on, the work lives in folders, so what's left of it (moments, steps, milestones) reads as notes too
-  const workNote = (ev) => FOLDERS && isWork(ev) && !isFolder(ev);
+  const workNote = (ev) => isWork(ev) && !isFolder(ev);
   const tintOf = (ev) => (workNote(ev) ? `tint-${ev.color || (ev.type === 'milestone' ? 'green' : 'yellow')}`
     : isWork(ev) || !TINT[ev.type] ? '' : `tint-${ev.color || TINT[ev.type]}`);
   const DEFAULT_SPAN = { note: 2, milestone: 2, quote: 2, person: 2, case: 4, step: 2, testimonial: 2, video: 2, logos: 2, snippets: 3, slot: 3, project: 2, moment: 2 };
@@ -118,9 +117,7 @@
 
   // work becomes glass folders with the project's screens peeking out of the top,
   // tinted from the work itself; the open slot is an empty folder waiting for yours
-  const FOLDERS = !new URLSearchParams(location.search).has('cards'); // v3: folders by default, ?cards for the white cards
-  if (FOLDERS) document.body.classList.add('use-folders');
-  const isFolder = (ev) => FOLDERS && (ev.type === 'case' || ev.type === 'slot' || (ev.type === 'project' && ev.photos));
+  const isFolder = (ev) => ev.type === 'case' || ev.type === 'slot' || (ev.type === 'project' && ev.photos);
   // the client on the folder: the symbol from their logo if we have one (a client whose name starts with it), else their initial
   function clientAvatar(client) {
     const l = LOGOS.find((x) => x.mk && client.toLowerCase().startsWith(x.name.split(' ')[0].toLowerCase()));
@@ -187,13 +184,6 @@
         inner = `<span class="plus">${icon.plus}</span><div class="card__title">${ev.title}</div><p>Your launch, built with 37degree. Pick a week.</p>`;
         break;
 
-      case 'case': {
-        const C = CASES[ev.case];
-        inner = `<div class="case-top"><span class="client">${C.client}</span><span class="pill">${C.duration}</span></div>
-          <div><div class="card__title">${C.title}</div>${date}</div>
-          <div class="frame"><img src="${C.cover}" alt="" loading="lazy"></div>`;
-        break;
-      }
       case 'step': {
         const C = CASES[ev.case];
         inner = `<div><div class="kicker">${C.short}</div><div class="card__title">${ev.title}</div>${date}</div>
@@ -356,27 +346,16 @@
     return `<div class="ag-intro">${introCopy}</div><div class="ag-wall">${filtered().map((w, i) => tileHTML(w, i) + stickyFor(i)).join('')}</div><div class="ag-outro">${outroHTML()}</div>`;
   }
 
-  function columnsFor(v) {
-    const list = ALL;
-    const keyOf = v === 'months' ? (e) => e.date.slice(0, 7) : (e) => e.date;
+  // one column for each day something happened
+  function columnsFor() {
     const cols = [];
-    for (const ev of list) {
-      const key = keyOf(ev);
+    for (const ev of ALL) {
+      const key = ev.date;
       let col = cols[cols.length - 1];
       if (!col || col.key !== key) cols.push((col = { key, events: [] }));
       col.events.push(ev);
     }
-    return cols.map((c) => {
-      const isMonth = v === 'months';
-      const first = c.events[0].date;
-      return {
-        ...c, isMonth,
-        date: isMonth ? `${c.key}-01` : first,
-        end: isMonth ? `${c.key}-31` : c.events[c.events.length - 1].date,
-        p: parse(first),
-        isToday: isMonth ? TODAY.startsWith(c.key) : c.key === TODAY,
-      };
-    });
+    return cols.map((c) => ({ ...c, date: c.key, end: c.key, p: parse(c.key), isToday: c.key === TODAY }));
   }
 
   // cards without a set row start a little lower in some columns, so the week reads staggered like a real calendar
@@ -404,64 +383,15 @@
     items.forEach((it) => { it.solo = !items.some((o) => o !== it && o.row < it.row + it.span && it.row < o.row + o.span); });
     return { items, lanes: lanesEnd.length };
   }
-  // Months view: each month is a small month calendar, its biggest moment, and a short agenda
-  const WEEK = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  function monthHTML(c) {
-    const { y, m } = c.p;
-    const iso = (d) => `${y}-${pad(m)}-${pad(d)}`;
-    const byDay = {};
-    c.events.forEach((ev) => { (byDay[parse(ev.date).d] = byDay[parse(ev.date).d] || []).push(ev); });
-    const inProject = (d) => RANGES.some((r) => r.start <= iso(d) && iso(d) <= r.end);
-    let cells = WEEK.map((w) => `<span class="mcal__w">${w}</span>`).join('') + '<span></span>'.repeat((new Date(y, m - 1, 1).getDay() + 6) % 7);
-    for (let d = 1, n = new Date(y, m, 0).getDate(); d <= n; d++) {
-      const evs = byDay[d] || [];
-      const first = evs.find((e) => clickable(e) && e.type !== 'slot') || evs.find(clickable);
-      const work = evs.some(isWork);
-      const tinted = !work && evs.map(tintOf).find(Boolean);
-      const cls = ['mcal__d', inProject(d) && 'in-range', evs.length && (work ? 'is-work' : 'is-note'), tinted, iso(d) === TODAY && 'is-today'].filter(Boolean).join(' ');
-      cells += first
-        ? `<button class="${cls}" data-day="${first.id}" aria-label="${labelFor(first)}">${d}</button>`
-        : `<span class="${cls}">${d}</span>`;
-    }
-    const pick = (fn) => c.events.find(fn);
-    const hero = pick((e) => e.type === 'case') || pick((e) => e.type === 'project' && e.photos) || pick((e) => e.type === 'slot') || pick((e) => e.photos) || pick((e) => e.type === 'snippets') || pick((e) => e.type === 'testimonial');
-    const notes = c.events.filter((e) => !isWork(e) && e.type !== 'quote' && e.type !== 'slot').length;
-    const works = c.events.filter(isWork).length;
-    const sum = [notes && `Notes ${notes}`, works && `Work ${works}`].filter(Boolean).join(' · ');
-    return `<div class="mbody">
-      <div class="mcal">${cells}</div>
-      ${hero ? `<div class="mhero">${cardHTML(hero)}</div>` : ''}
-      ${sum ? `<div class="msum">${sum}</div>` : ''}
-      <div class="mlist">${c.events.filter((e) => e !== hero).map(rowHTML).join('')}</div>
-    </div>`;
-  }
-  function rowHTML(ev) {
-    if (ev.type === 'quote') return `<div class="mquote">${ev.title}</div>`;
-    const p = parse(ev.date);
-    const title = ev.type === 'testimonial' ? `${testiOf(ev).name}: “${testiOf(ev).quote}”`
-      : ev.type === 'case' ? strip(CASES[ev.case].title) : strip(ev.title);
-    const tag = clickable(ev) ? 'button' : 'div';
-    const cls = ['mrow', isWork(ev) ? 'is-work' : tintOf(ev), visited.has(ev.id) && 'is-visited'].filter(Boolean).join(' ');
-    return `<${tag} class="${cls}" data-id="${ev.id}"${tag === 'button' ? ` aria-label="${labelFor(ev)}"` : ''}><i></i><span class="t">${title}</span><span class="d">${MON[p.m - 1]} ${p.d}</span></${tag}>`;
-  }
-
   function colHTML(c, idx) {
-    const head = c.isMonth
-      ? `<span class="d">${MONTHS[c.p.m - 1]}</span><span class="y">${c.p.y}</span>`
-      : `<span class="d">${c.isToday ? 'Today' : `${MON[c.p.m - 1]} ${c.p.d}`}</span><span class="y">${c.isToday ? `${MON[c.p.m - 1]} ${c.p.d}, ${c.p.y}` : c.p.y}</span>`;
-    let body, style = '';
-    if (c.isMonth) {
-      body = monthHTML(c);
-    } else {
-      const { items, lanes } = placeDay(c.events, idx);
-      const gridCols = lanes > 1 ? ` style="grid-template-columns:repeat(${lanes}, minmax(0, 1fr))"` : '';
-      body = `<div class="col-body"${gridCols}>${items.map((it) => {
-        const colPos = lanes > 1 ? (it.solo ? '1 / -1' : `${it.lane + 1}`) : '1';
-        return cardHTML(it.ev).replace(/^<(\w+) /, `<$1 style="grid-row:${it.row} / span ${it.span};grid-column:${colPos}" `);
-      }).join('')}</div>`;
-    }
-    const cls = ['col', c.isMonth && 'is-month', c.isToday && 'col--today'].filter(Boolean).join(' ');
-    return `<section class="${cls}" data-date="${c.date}" data-end="${c.end}"${style}>
+    const head = `<span class="d">${c.isToday ? 'Today' : `${MON[c.p.m - 1]} ${c.p.d}`}</span><span class="y">${c.isToday ? `${MON[c.p.m - 1]} ${c.p.d}, ${c.p.y}` : c.p.y}</span>`;
+    const { items, lanes } = placeDay(c.events, idx);
+    const gridCols = lanes > 1 ? ` style="grid-template-columns:repeat(${lanes}, minmax(0, 1fr))"` : '';
+    const body = `<div class="col-body"${gridCols}>${items.map((it) => {
+      const colPos = lanes > 1 ? (it.solo ? '1 / -1' : `${it.lane + 1}`) : '1';
+      return cardHTML(it.ev).replace(/^<(\w+) /, `<$1 style="grid-row:${it.row} / span ${it.span};grid-column:${colPos}" `);
+    }).join('')}</div>`;
+    return `<section class="col${c.isToday ? ' col--today' : ''}" data-date="${c.date}" data-end="${c.end}">
       ${c.isToday ? '<span class="nowline" aria-hidden="true"></span>' : ''}
       <div class="col-head">${head}</div>${body}</section>`;
   }
@@ -470,7 +400,7 @@
   const trustedRun = `<div class="trusted__run">${LOGOS.map((l) => logoHTML(l.src, 18)).join('')}</div>`;
   const introCopy = `<h1>Our story, <em>by the day</em>.</h1>
     <p>37degree is a design-led growth studio for Tech &amp; AI companies. Notes are how we got here. Work is what we've shipped.</p>
-    <div class="legend"><span>${icon.note}Notes</span><span>${FOLDERS ? icon.folder : icon.card}Work</span></div>
+    <div class="legend"><span>${icon.note}Notes</span><span>${icon.folder}Work</span></div>
     <div class="trusted"><span class="trusted__label">Trusted by</span><div class="trusted__strip">${trustedRun}${trustedRun.replace('class="trusted__run"', 'class="trusted__run" aria-hidden="true"')}</div></div>`;
 
   /* ── The sidebar, the same in both views: our Stories intro on top, and what backs it up at the foot, as on Puru's ── */
@@ -490,7 +420,7 @@
   const sideHTML = () => `<div class="side__top"><h1>Our story, <em>by the day</em>.</h1></div>
     <div class="side__mid">
       <p>37degree is a design-led growth studio for Tech &amp; AI companies. Notes are how we got here. Work is what we've shipped.</p>
-      <div class="legend"><button data-focus="note">${icon.note}Notes</button><button data-focus="work">${FOLDERS ? icon.folder : icon.card}Work</button></div>
+      <div class="legend"><button data-focus="note">${icon.note}Notes</button><button data-focus="work">${icon.folder}Work</button></div>
     </div>
     <div class="side__proof">
       ${SIDE_QUOTE ? `<div class="side__peek">${cardHTML(SIDE_QUOTE)}</div>` : ''}
@@ -695,7 +625,7 @@
     side.innerHTML = sideHTML();
     if (view === 'projects') { renderProjects(); placeCta(); return syncBar(); }
     track.innerHTML =
-      columnsFor(view).map((c, i) => colHTML(c, i)).join('') +
+      columnsFor().map((c, i) => colHTML(c, i)).join('') +
       `<section class="col col--end"><div class="col-head"></div>${outroHTML()}</section>`;
     placeCta();
     layoutBars();
@@ -827,12 +757,7 @@
 
   timeline.addEventListener('wheel', (e) => {
     if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-    // a long month scrolls on its own; everywhere else the wheel moves through time
-    const mb = e.target instanceof Element && e.target.closest('.mbody');
-    if (mb && mb.scrollHeight > mb.clientHeight + 2) {
-      const atTop = mb.scrollTop <= 0, atEnd = mb.scrollTop + mb.clientHeight >= mb.scrollHeight - 1;
-      if ((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atEnd)) return;
-    }
+    // the wheel moves through time
     e.preventDefault();
     timeline.scrollLeft += e.deltaY * (e.deltaMode === 1 ? 32 : 1);
   }, { passive: false });
@@ -959,15 +884,8 @@
   }
 
   /* ── "Work with us": at the end of the bottom bar, and in the sidebar (on phones, the intro) ── */
-  // four looks to choose from: ?cta=1 ink pill (default), 2 brand orange, 3 the open slot, 4 the founders
-  const CTA_LOOK = ['ink', 'brand', 'slot', 'founders'][(+new URLSearchParams(location.search).get('cta') || 1) - 1] || 'ink';
-  const go = `<i class="cta__go">${icon.arrow}</i>`;
   const ctaBar = $('.cta');
-  ctaBar.classList.add(`cta--${CTA_LOOK}`);
-  ctaBar.innerHTML = `<span class="cta__in">${{
-    slot: `<i class="cta__fold">${icon.folder}</i><span class="cta__txt"><b>Work with us</b><small>Pick a week for your launch</small></span>${go}`,
-    founders: `<span class="cta__faces" aria-hidden="true"><i>${PEOPLE.puru.mono}</i><i>${PEOPLE.haneef.mono}</i></span>Work with us${go}`,
-  }[CTA_LOOK] || `Work with us${go}`}</span>`;
+  ctaBar.innerHTML = `<span class="cta__in">Work with us<i class="cta__go">${icon.arrow}</i></span>`;
   ctaBar.classList.add('cta--bar');
   // in the sidebar (and the intro on phones) it's a plain pill right under the title, as on Puru's
   const ctaIntro = Object.assign(document.createElement('a'), { className: 'btn side__cta', href: MAIL, innerHTML: `Work with us ${icon.arrow}` });
@@ -1382,7 +1300,7 @@
   // the work's pictures close the story, one after another at full width, just before the footer
   const shotsHTML = (shots) => (shots && shots.length ? `<section class="pp-sec pp-shots">${shots.map((s) => `<img src="${s}" alt="" loading="lazy">`).join('')}</section>` : '');
 
-  // a project or moment from Notion: everything comes from its row and page body
+  // a project or moment from the CMS: everything comes from its card and write-up
   const WORKS = ALL.filter((e) => e.type === 'case' || e.type === 'project');
   function projectSheetHTML(ev) {
     const parent = ev.parent && BY_ID[ev.parent];
@@ -1711,11 +1629,9 @@
   function shapeFolders() {
     $$('.fold__glass:not([data-shaped])').forEach((g) => { g.dataset.shaped = ''; shaper.observe(g); });
   }
-  if (FOLDERS) {
-    const refresh = () => { tintFolders(); shapeFolders(); };
-    refresh();
-    new MutationObserver(refresh).observe(document.body, { childList: true, subtree: true });
-  }
+  const refresh = () => { tintFolders(); shapeFolders(); };
+  refresh();
+  new MutationObserver(refresh).observe(document.body, { childList: true, subtree: true });
 
   document.addEventListener('click', (e) => {
     const t = e.target;
@@ -1765,9 +1681,9 @@
       if (open && open.kind === 'sheet' && !mq.matches) scrollToDate(target.date, `[data-id="${target.id}"]`);
       return requestAnimationFrame(() => openProject(target));
     }
-    const card = t.closest('button.card, button.mrow, button[data-day]');
+    const card = t.closest('button.card');
     if (!card || dragMoved || panMoved) return;
-    const ev = BY_ID[card.dataset.id || card.dataset.day];
+    const ev = BY_ID[card.dataset.id];
     if (ev.type === 'case') return openCase(ev.case, null, card);
     if (ev.type === 'video') return openCase('sidecar', 'video', card, { play: true });
     if (isProject(ev)) return openProject(ev, card);
@@ -1789,7 +1705,7 @@
   addEventListener('resize', () => {
     if (!mq.matches) { layoutBars(); buildMinimap(); }
   });
-  mq.addEventListener('change', () => { if (mq.matches && view === 'months') view = 'days'; render(); });
+  mq.addEventListener('change', render);
 
   function fromHash() {
     const m = location.hash.match(/^#work\/([\w-]+)/);
