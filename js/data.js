@@ -47,6 +47,7 @@ const CASES = {
     results: [['6 mo', 'From concept to a product in daily use'], ['2 mo', 'To a working alpha inside Teams'], ['4', 'Data sources answered from one chat']],
     cover: 'assets/img/kam-cover.png',
     stack: ['assets/img/kam-cover.png', 'assets/img/kam-03.png', 'assets/img/kam-07.png'],
+    screen: 'teams', // the chapter whose first picture stands for the work beside its folder in Projects
     meta: [
       ['Company', 'DemandFarm'],
       ['Industry', 'AI · CRM · Enterprise SaaS'],
@@ -145,6 +146,7 @@ const CASES = {
     live: 'https://deccan.ai/enterprise-os',
     cover: 'assets/img/dec-cover.png',
     stack: ['assets/img/dec-cover.png', 'assets/img/dec-02.png', 'assets/img/dec-05.png'],
+    screen: 'pain',
     meta: [
       ['Company', 'Deccan AI'],
       ['Industry', 'AI · Data infrastructure · Enterprise SaaS'],
@@ -181,15 +183,18 @@ const TESTIMONIALS = {
   shai: { name: 'Shai Krishna', role: 'Staff Product Designer @Sense', img: 'assets/img/t-shai.jpg', quote: 'I’ve had the chance to check out their design work, and it’s seriously impressive. He has a knack for understanding what users want and translating it into beautiful, functional designs. His attention to detail is remarkable.' },
 };
 
-// one-colour marks (black on transparent, trimmed). `ar` is width ÷ height, used to size them evenly;
+// one-colour marks (black on transparent, trimmed), each taken from the company's own site where it has one.
+// `ar` is width ÷ height and `d` how much of that box is ink: together they size the logos so they look equally big.
 // `mk` is how wide the symbol at the start of the wordmark is (÷ height), so a folder's avatar can show just that.
 const LOGOS = [
-  { name: 'Deccan AI', src: 'assets/img/logos/deccan.png', ar: 4.288, mk: 0.8 },
-  { name: 'Sidecar', src: 'assets/img/logos/sidecar.png', ar: 3.697, mk: 1 },
-  { name: 'Valley', src: 'assets/img/logos/valley.png', ar: 3.552 },
-  { name: 'Induced', src: 'assets/img/logos/induced.png', ar: 6.076 },
-  { name: 'Superteam', src: 'assets/img/logos/superteam.png', ar: 8.457, mk: 1.3 },
-  { name: 'Goatfish', src: 'assets/img/logos/goatfish.png', ar: 0.891, mk: 0.891 },
+  { name: 'Deccan AI', src: 'assets/img/logos/deccan.png', ar: 4.362, d: 0.196, mk: 0.769 },
+  { name: 'Sidecar', src: 'assets/img/logos/sidecar.png', ar: 3.77, d: 0.229, mk: 0.969 },
+  { name: 'Valley', src: 'assets/img/logos/valley.png', ar: 3.41, d: 0.232 },
+  { name: 'Induced', src: 'assets/img/logos/induced.png', ar: 6.179, d: 0.373 },
+  { name: 'Solana', src: 'assets/img/logos/solana.png', ar: 6.717, d: 0.407 },
+  { name: 'Superteam', src: 'assets/img/logos/superteam.png', ar: 7.505, d: 0.38, mk: 1.106 },
+  { name: 'Goatfish', src: 'assets/img/logos/goatfish.png', ar: 0.891, d: 0.29, mk: 0.891 },
+  { name: 'Solana Economic Zone', src: 'assets/img/logos/sez.png', ar: 0.876, d: 0.669 },
 ];
 
 const SNIPPETS = ['assets/img/snip-1.jpg', 'assets/img/snip-2.jpg', 'assets/img/snip-3.jpg', 'assets/img/snip-4.jpg'];

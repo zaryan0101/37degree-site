@@ -38,6 +38,8 @@ function toEvent(r, byPath) {
     highlight: r.highlight || undefined,
     tbc: r.placeholder_date || undefined,
     color: r.color ? r.color.toLowerCase() : undefined,
+    // the project a card belongs to: groups it under that company in the Projects view
+    parent: parent ? idOf(parent.file) : undefined,
   };
   switch (r.card) {
     case 'Quote': return { ...base, type: 'quote', title };
@@ -56,11 +58,11 @@ function toEvent(r, byPath) {
         ? { ...base, type: 'milestone', title, metric: r.metric || undefined, sub: plain(r.summary) || undefined, case: r.case_study || undefined, section: r.case_section || undefined, client: client || parent?.client || undefined }
         : { ...base, type: 'milestone', title, metric: r.metric || undefined, detail: summary };
     case 'Project':
-      if (r.case_study) return { ...base, type: 'case', case: r.case_study, end: r.end || undefined };
+      if (r.case_study) return { ...base, type: 'case', case: r.case_study, services: r.services || undefined, end: r.end || undefined };
       return { ...base, type: 'project', title, client, summary, services: r.services || [], photos: pics, live, end: r.end || undefined, body: cleanHTML(r.body) };
     case 'Moment':
       if (r.case_study) return { ...base, type: 'step', case: r.case_study, section: r.case_section || undefined, title, img: photos[0] };
-      return { ...base, type: 'moment', title, client: client || parent?.client, summary, services: r.services || [], photos: pics, live, parent: parent ? idOf(parent.file) : undefined, body: cleanHTML(r.body) };
+      return { ...base, type: 'moment', title, client: client || parent?.client, summary, services: r.services || [], photos: pics, live, body: cleanHTML(r.body) };
   }
   console.warn(`  skipped "${r.name}": unknown Card "${r.card}"`);
   return null;

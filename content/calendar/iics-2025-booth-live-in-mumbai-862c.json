@@ -11,5 +11,6 @@
   ],
   "highlight": false,
   "placeholder_date": true,
+  "part_of": "content/calendar/case-sidecar.json",
   "publish": true
 }

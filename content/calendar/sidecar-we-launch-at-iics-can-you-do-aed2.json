@@ -7,5 +7,6 @@
   "highlight": false,
   "placeholder_date": true,
   "order": 2,
+  "part_of": "content/calendar/case-sidecar.json",
   "publish": true
 }

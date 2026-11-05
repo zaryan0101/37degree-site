@@ -84,7 +84,7 @@ content:
       - name: part_of
         label: Part of
         type: reference
-        description: For a Moment, the project it belongs to (it borrows that client).
+        description: The project this card belongs to; it shows under that company in the Projects view. A Moment also borrows its client.
         options:
           collection: calendar
           search: name
@@ -109,7 +109,7 @@ content:
       - name: highlight
         label: Highlight
         type: boolean
-        description: Also show it in the Highlights view (the default view).
+        description: Marks a card as a highlight. Not used by the current views (Stories shows every card, Projects groups by company).
       - name: placeholder_date
         label: Date is a placeholder
         type: boolean

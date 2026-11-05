@@ -10,7 +10,7 @@
   const now = new Date();
   const TODAY = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const ROWS = 7;
-  const VIEWS = ['days', 'months', 'highlights'];
+  const VIEWS = ['days', 'projects']; // shown as Stories and Projects; the Months view is no longer offered
   const MAIL = 'mailto:puru@37degr.ee?cc=haneef@37degr.ee&subject=' + encodeURIComponent('Work with 37degree');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mq = matchMedia('(max-width: 760px)');
@@ -102,11 +102,12 @@
   const DEFAULT_SPAN = { note: 2, milestone: 2, quote: 2, person: 2, case: 4, step: 2, testimonial: 2, video: 2, logos: 2, snippets: 3, slot: 3, project: 2, moment: 2 };
   const tagsHTML = (ev) => (ev.services && ev.services.length ? `<div class="tags">${ev.services.map((s) => `<span class="pill">${s}</span>`).join('')}</div>` : '');
 
-  // logos are drawn as masks in the surrounding text colour, sized so wide wordmarks and square marks feel equal
+  // logos are drawn as masks in the surrounding text colour, sized by how much ink they put down (shape × density),
+  // so a wide dense wordmark and a small open mark look equally big
   const LOGO_BY_SRC = Object.fromEntries(LOGOS.map((l) => [l.src, l]));
   function logoHTML(src, base, label) {
-    const l = LOGO_BY_SRC[src] || { ar: 4, name: label || '' };
-    const h = Math.round(base * clamp(Math.sqrt(3.5 / l.ar), 0.62, 1.5));
+    const l = LOGO_BY_SRC[src] || { ar: 4, d: 0.3, name: label || '' };
+    const h = Math.round(base * clamp(Math.pow(0.9 / (l.ar * (l.d || 0.3)), 0.35), 0.6, 1.35));
     // absolute URL: a url() inside a custom property resolves against the stylesheet, not the page
     const abs = new URL(src, document.baseURI).href;
     return `<i class="logo" role="img" aria-label="${label || l.name}" style="--src:url('${abs}');--ar:${l.ar};height:${h}px"></i>`;
@@ -153,8 +154,11 @@
     } else switch (ev.type) {
       case 'quote':
         inner = `<span>${ev.title}</span>`; break;
-      case 'note':
-        inner = `<div><div class="card__title">${ev.title}</div>${date}</div>${prints(ev)}`; break;
+      case 'note': {
+        const p = view === 'projects' && projectOf(ev);
+        const kicker = p ? `<div class="kicker">${p.type === 'case' ? CASES[p.case].short : p.client || ''}</div>` : '';
+        inner = `<div>${kicker}<div class="card__title">${ev.title}</div>${date}</div>${prints(ev)}`; break;
+      }
       case 'milestone':
         inner = ev.metric
           ? `<div class="num">${ev.metric}</div><div><div class="card__title">${ev.title}</div>${date}</div>`
@@ -181,6 +185,7 @@
       case 'slot':
         inner = `<span class="plus">${icon.plus}</span><div class="card__title">${ev.title}</div><p>Your launch, built with 37degree. Pick a week.</p>`;
         break;
+
       case 'case': {
         const C = CASES[ev.case];
         inner = `<div class="case-top"><span class="client">${C.client}</span><span class="pill">${C.duration}</span></div>
@@ -224,10 +229,108 @@
   }
 
   /* ── Columns ──────────────────────────────────────── */
-  let view = 'highlights'; // open on the edited cut; Days and Months are one click away
+  let view = 'days'; // open on Stories, the studio by the day; Projects is one click away
+
+  // Projects view: one column per company, newest first, holding its projects and the work linked to them
+  const CASE_EV = Object.fromEntries(ALL.filter((e) => e.type === 'case').map((e) => [e.case, e]));
+  function projectOf(ev, seen = 0) {
+    if (ev.type === 'case' || ev.type === 'project') return ev;
+    if (ev.parent && BY_ID[ev.parent] && seen < 4) return projectOf(BY_ID[ev.parent], seen + 1);
+    return ev.case ? CASE_EV[ev.case] || null : null;
+  }
+  // the company, not the whole client line: "Goatfish · ORO · MOCA" → Goatfish, "lab0.ai (YC)" → lab0.ai
+  const companyOf = (p) => (p.type === 'case' ? CASES[p.case].client : p.client || strip(p.title)).split(/\s+[·×(]|,/)[0].trim();
+  const endOf = (ev) => ev.end || (ev.type === 'case' && CASES[ev.case].end) || ev.date;
+  function monthSpan(a, b) {
+    const p = parse(a), q = parse(b);
+    if (p.y === q.y && p.m === q.m) return `${MON[p.m - 1]} ${p.y}`;
+    return p.y === q.y ? `${MON[p.m - 1]} – ${MON[q.m - 1]} ${q.y}` : `${MON[p.m - 1]} ${p.y} – ${MON[q.m - 1]} ${q.y}`;
+  }
+  // the filter in the top strip: a card answers to its own services, or else to its project's
+  const FILTERS = [
+    { key: 'all', label: 'All work' },
+    { key: 'case', label: 'Case studies', test: (ev, p) => p.type === 'case' },
+    { key: 'launch', label: 'Launch videos', tags: ['Video', 'Motion'] },
+    { key: 'brand', label: 'Branding', tags: ['Branding', 'Naming', 'Strategy'] },
+    { key: 'web', label: 'Websites & product', tags: ['Website', 'Web app', 'Product design'] },
+    { key: 'deck', label: 'Pitch decks', tags: ['Pitch deck'] },
+    { key: 'event', label: 'Events', tags: ['Event'] },
+    { key: 'campaign', label: 'Campaigns', tags: ['Campaign', 'Print', 'Copy'] },
+  ];
+  let filter = 'all';
+  function inFilter(ev, p, key = filter) {
+    const f = FILTERS.find((x) => x.key === key);
+    if (f.test) return f.test(ev, p);
+    if (!f.tags) return true;
+    const tags = ev.services && ev.services.length ? ev.services : p.services || [];
+    return tags.some((t) => f.tags.includes(t));
+  }
+  // how many folders each filter shows; a filter with none isn't offered
+  const filterCount = (key) => ALL.filter((e) => (e.type === 'case' || e.type === 'project') && inFilter(e, e, key)).length;
+
+  // a case study's story at a glance beside its folder: its headline result (the first that isn't just its length,
+  // which the folder already shows) and one real screen from its key chapter; Sidecar's film is its screen
+  const CASE_CARDS = Object.fromEntries(Object.values(CASE_EV).map((p) => {
+    const C = CASES[p.case];
+    const len = (v) => v.toLowerCase().replace(/^(\S+)\s+(\S).*$/, '$1 $2');
+    const res = C.results && C.results.find(([n]) => len(n) !== len(C.duration));
+    const end = C.blocks.find((b) => b.id === 'result' || b.id === 'impact');
+    const sec = C.screen && C.blocks.find((b) => b.id === C.screen);
+    const cards = [
+      sec && sec.img && { id: `${p.case}-screen`, type: 'step', case: p.case, section: sec.id, date: p.date, title: strip(sec.h), img: sec.img[0], span: 3 },
+      res && { id: `${p.case}-result`, type: 'milestone', case: p.case, section: end && end.id, date: p.end || C.end || p.date, metric: res[0], title: res[1] },
+    ].filter(Boolean);
+    cards.forEach((c) => (BY_ID[c.id] = c));
+    return [p.case, cards];
+  }));
+
+  // a company keeps only its essentials, so a column reads at a glance: its folders, the cards with pictures or a film,
+  // its quote and one testimonial; a case study's chapters and milestones stay inside it, its own cards standing in for them
+  const isEssential = (ev, p) => ['case', 'project', 'video', 'quote', 'testimonial'].includes(ev.type) ||
+    (p.type === 'case' ? ev.type === 'note' && !!(ev.photos && ev.photos.length) : !!(ev.photos && ev.photos.length));
+  function projectColumns() {
+    const groups = new Map();
+    for (const ev of ALL) {
+      const p = projectOf(ev);
+      if (!p || !isEssential(ev, p) || !inFilter(ev, p)) continue;
+      const name = companyOf(p);
+      if (!groups.has(name)) groups.set(name, { key: name, name, events: [] });
+      if (ev.type === 'testimonial' && groups.get(name).events.some((x) => x.ev.type === 'testimonial')) continue;
+      groups.get(name).events.push({ ev, p });
+    }
+    const cols = [...groups.values()].map((g) => {
+      // newest project first; each project leads with its own folder, then its story in date order
+      const latest = (p) => g.events.filter((x) => x.p === p).reduce((m, x) => (endOf(x.ev) > m ? endOf(x.ev) : m), '');
+      g.events.sort((a, b) => (a.p === b.p ? (a.ev === a.p ? -1 : b.ev === b.p ? 1 : a.ev.date < b.ev.date ? -1 : 1) : latest(a.p) > latest(b.p) ? -1 : 1));
+      // a case study's own cards follow its folder
+      g.events = g.events.flatMap((x) => (x.ev.type === 'case' ? [x, ...(CASE_CARDS[x.ev.case] || []).map((ev) => ({ ev, p: x.p }))] : [x]));
+      // a quote sits under the column's first card, as quotes sit under the first card of a day in Stories
+      const quotes = g.events.filter((x) => x.ev.type === 'quote');
+      g.events = g.events.filter((x) => x.ev.type !== 'quote');
+      g.events.splice(1, 0, ...quotes);
+      const date = g.events.reduce((m, x) => (x.ev.date < m ? x.ev.date : m), g.events[0].ev.date);
+      const end = g.events.reduce((m, x) => (endOf(x.ev) > m ? endOf(x.ev) : m), '');
+      return { key: g.key, name: g.name, sub: monthSpan(date, end), events: g.events.map((x) => x.ev), date, end, isProject: true };
+    }).sort((a, b) => (a.end > b.end ? -1 : a.end < b.end ? 1 : 0));
+    // pauses between companies holding the studio's own proof, at chosen moments: after the newest few,
+    // and just before the case studies. They're about all the work, so a filter leaves them out
+    if (filter === 'all') {
+      const filler = (key, label, ev) => ev && { key, name: label, sub: '', events: [ev], date: ev.date, end: ev.date, isProject: true, isFiller: true };
+      const count = filler('so-far', 'So far', ALL.find((e) => e.type === 'milestone' && e.metric && !projectOf(e)));
+      const trusted = filler('trusted', 'Trusted by', ALL.find((e) => e.type === 'logos'));
+      const firstCase = cols.findIndex((c) => c.events[0].type === 'case'); // the first company that leads with a case study
+      if (trusted) cols.splice(firstCase === -1 ? cols.length : firstCase, 0, trusted);
+      if (count) cols.splice(Math.min(4, cols.length), 0, count);
+    }
+    // the open slot comes last, as Today does in Stories: the next company could be yours
+    const slot = ALL.find((e) => e.type === 'slot');
+    if (slot) cols.push({ key: 'next', name: 'Your company', sub: 'Next up', events: [slot], date: slot.date, end: slot.date, isProject: true });
+    return cols;
+  }
 
   function columnsFor(v) {
-    const list = v === 'highlights' ? ALL.filter((e) => e.highlight) : ALL;
+    if (v === 'projects') return projectColumns();
+    const list = ALL;
     const keyOf = v === 'months' ? (e) => e.date.slice(0, 7) : (e) => e.date;
     const cols = [];
     for (const ev of list) {
@@ -251,11 +354,14 @@
 
   // cards without a set row start a little lower in some columns, so the week reads staggered like a real calendar
   const STAGGER = [1, 2, 1, 3];
+  function spanOf(ev) {
+    const base = ev.type === 'person' || ev.type === 'testimonial' ? 2 : ev.span || DEFAULT_SPAN[ev.type] || 2;
+    return Math.min(ev.photos ? Math.max(base, ev.type === 'project' ? 4 : 3) : base, ROWS);
+  }
   function placeDay(events, idx = 0) {
     let cursor = STAGGER[idx % STAGGER.length];
     const items = events.map((ev) => {
-      const base = ev.type === 'person' || ev.type === 'testimonial' ? 2 : ev.span || DEFAULT_SPAN[ev.type] || 2;
-      const span = Math.min(ev.photos ? Math.max(base, ev.type === 'project' ? 4 : 3) : base, ROWS);
+      const span = spanOf(ev);
       let row = ev.row || cursor;
       if (row + span - 1 > ROWS) row = Math.max(1, ROWS - span + 1);
       cursor = row + span;
@@ -270,6 +376,26 @@
     });
     items.forEach((it) => { it.solo = !items.some((o) => o !== it && o.row < it.row + it.span && it.row < o.row + o.span); });
     return { items, lanes: lanesEnd.length };
+  }
+  // a company in Projects is sized the way a busy day is in Stories: its work (folders, and its quote) at the column's full
+  // width, the cards around it smaller, two side by side at half width; rows that run out carry on in another column
+  // beside it, starting at the next 1-2-1-3 height
+  function placeCompany(events, idx = 0) {
+    const start = (c) => STAGGER[(idx + c) % STAGGER.length];
+    const wide = (ev) => ev.type === 'case' || ev.type === 'project' || ev.type === 'quote';
+    const items = [];
+    let col = 0, row = start(0);
+    for (let i = 0; i < events.length; i++) {
+      const ev = events[i], span = spanOf(ev);
+      const mate = !wide(ev) && events[i + 1] && !wide(events[i + 1]) ? events[i + 1] : null;
+      const band = mate ? Math.max(span, spanOf(mate)) : span;
+      if (row + band - 1 > ROWS && row > start(col)) { col++; row = start(col); }
+      const r = row + band - 1 > ROWS ? Math.max(1, ROWS - band + 1) : row;
+      items.push({ ev, row: r, span, col, half: mate ? 0 : -1 });
+      if (mate) { items.push({ ev: mate, row: r, span: spanOf(mate), col, half: 1 }); i++; }
+      row = r + band;
+    }
+    return { items, cols: col + 1 };
   }
 
   // Months view: each month is a small month calendar, its biggest moment, and a short agenda
@@ -314,12 +440,21 @@
   }
 
   function colHTML(c, idx) {
-    const head = c.isMonth
+    const head = c.isFiller
+      ? `<span class="col-label">${c.name}</span>`
+      : c.isProject
+      ? `<span class="d">${c.name}</span><span class="y">${c.sub}</span>`
+      : c.isMonth
       ? `<span class="d">${MONTHS[c.p.m - 1]}</span><span class="y">${c.p.y}</span>`
       : `<span class="d">${c.isToday ? 'Today' : `${MON[c.p.m - 1]} ${c.p.d}`}</span><span class="y">${c.isToday ? `${MON[c.p.m - 1]} ${c.p.d}, ${c.p.y}` : c.p.y}</span>`;
     let body, style = '';
     if (c.isMonth) {
       body = monthHTML(c);
+    } else if (c.isProject) {
+      const { items, cols } = placeCompany(c.events, idx);
+      style = ` style="--lanes:${cols}"`;
+      body = `<div class="col-body" style="grid-template-columns:repeat(${cols * 2}, minmax(0, 1fr))">${items.map((it) =>
+        cardHTML(it.ev).replace(/^<(\w+) /, `<$1 style="grid-row:${it.row} / span ${it.span};grid-column:${it.half < 0 ? `${it.col * 2 + 1} / span 2` : it.col * 2 + 1 + it.half}" `)).join('')}</div>`;
     } else {
       const { items, lanes } = placeDay(c.events, idx);
       const gridCols = lanes > 1 ? ` style="grid-template-columns:repeat(${lanes}, minmax(0, 1fr))"` : '';
@@ -328,15 +463,18 @@
         return cardHTML(it.ev).replace(/^<(\w+) /, `<$1 style="grid-row:${it.row} / span ${it.span};grid-column:${colPos}" `);
       }).join('')}</div>`;
     }
-    const cls = ['col', c.isMonth && 'is-month', view === 'highlights' && 'is-highlight', c.isToday && 'col--today'].filter(Boolean).join(' ');
+    const cls = ['col', c.isMonth && 'is-month', c.isProject && 'is-project', c.isFiller && 'is-filler', c.isToday && 'col--today'].filter(Boolean).join(' ');
     return `<section class="${cls}" data-date="${c.date}" data-end="${c.end}"${style}>
       ${c.isToday ? '<span class="nowline" aria-hidden="true"></span>' : ''}
       <div class="col-head">${head}</div>${body}</section>`;
   }
 
+  // the clients run past in a loop: two copies of the row side by side, so one picks up where the other ends
+  const trustedRun = `<div class="trusted__run">${LOGOS.map((l) => logoHTML(l.src, 18)).join('')}</div>`;
   const introCopy = `<h1>Our story, <em>by the day</em>.</h1>
     <p>37degree is a design-led growth studio for Tech &amp; AI companies. Notes are how we got here. Work is what we've shipped.</p>
-    <div class="legend"><span>${icon.note}Notes</span><span>${FOLDERS ? icon.folder : icon.card}Work</span></div>`;
+    <div class="legend"><span>${icon.note}Notes</span><span>${FOLDERS ? icon.folder : icon.card}Work</span></div>
+    <div class="trusted"><span class="trusted__label">Trusted by</span><div class="trusted__strip">${trustedRun}${trustedRun.replace('class="trusted__run"', 'class="trusted__run" aria-hidden="true"')}</div></div>`;
 
   function outroHTML() {
     const row = (P) => `<a href="${P.links[0].href}"><span class="avatar avatar--md">${P.mono}</span><span><b>${P.links[0].label}</b><span>${P.role}</span></span></a>`;
@@ -355,6 +493,7 @@
       `<section class="col col--intro"><div class="col-head"></div><div class="intro">${introCopy}</div></section>` +
       columnsFor(view).map((c, i) => colHTML(c, i)).join('') +
       `<section class="col col--end"><div class="col-head"></div>${outroHTML()}</section>`;
+    placeCta();
     layoutBars();
     syncBar();
     buildMinimap();
@@ -362,7 +501,7 @@
 
   function layoutBars() {
     $$('.allday-bar', track).forEach((b) => b.remove());
-    if (view === 'highlights') return;
+    if (view === 'projects') return;
     const cols = $$('.col[data-date]', track);
     const lanesEnd = [];
     const depth = new Map(); // how many bar lanes cross each column
@@ -391,13 +530,20 @@
   }
 
   function renderAgenda() {
-    const list = view === 'highlights' ? ALL.filter((e) => e.highlight) : ALL;
+    // Projects: the same companies as the columns, each under its name; Stories: every card under its month
+    const list = view === 'projects' ? projectColumns().flatMap((c) => c.events.map((ev) => ({ ev, group: c }))) : ALL.map((ev) => ({ ev }));
     let html = `<div class="ag-intro">${introCopy}</div>`;
     let month = '', day = '';
     const closeDay = () => { if (day) html += '</div></div>'; day = ''; };
-    for (const ev of list) {
+    for (const { ev, group } of list) {
       const p = parse(ev.date);
-      if (ev.date.slice(0, 7) !== month) {
+      if (group) {
+        if (group.key !== month) {
+          closeDay();
+          month = group.key;
+          html += `<div class="ag-month">${group.name} <span>${group.sub}</span></div>`;
+        }
+      } else if (ev.date.slice(0, 7) !== month) {
         closeDay();
         month = ev.date.slice(0, 7);
         html += `<div class="ag-month">${MONTHS[p.m - 1]} <span>${p.y}</span></div>`;
@@ -411,6 +557,7 @@
     }
     closeDay();
     agenda.innerHTML = html + `<div class="ag-outro">${outroHTML()}</div>`;
+    placeCta();
     syncBar();
   }
 
@@ -421,7 +568,16 @@
   function buildMinimap() {
     if (mq.matches) return;
     const W = mini.clientWidth, total = track.scrollWidth || 1;
+    const left = track.getBoundingClientRect().left;
+    const tick = (el) => {
+      const x = (((el.getBoundingClientRect().left - left) / total) * W).toFixed(1);
+      if (el.classList.contains('card--slot')) return `<i class="is-today" style="left:${x}px"></i>`;
+      if (el.classList.contains('card--case')) return `<i class="is-case" style="left:${x}px"></i>`;
+      return `<i class="${el.classList.contains('note-card') ? `is-note ${[...el.classList].find((k) => k.startsWith('tint-'))}` : ''}" style="left:${x}px"></i>`;
+    };
     miniTicks.innerHTML = $$('.col[data-date]', track).map((c) => {
+      // a company holds many pieces of work: each card gets the tick a day would, so the bar reads as it does in Stories
+      if (c.classList.contains('is-project')) return $$('.card', c).map(tick).join('');
       const x = ((c.offsetLeft / total) * W).toFixed(1);
       if (c.classList.contains('col--today')) return `<i class="is-today" style="left:${x}px"></i>`;
       if (c.querySelector('.card--case')) return `<i class="is-case" style="left:${x}px"></i>`;
@@ -467,7 +623,13 @@
   });
 
   /* ── Moving through time ──────────────────────────── */
-  function scrollToDate(date) {
+  // in Projects the columns are companies, not dates, so `sel` finds the card's own column instead
+  function scrollToDate(date, sel) {
+    if (view === 'projects') {
+      const col = sel && $(sel, track) && $(sel, track).closest('.col');
+      if (col) timeline.scrollLeft = Math.max(0, col.offsetLeft - 40);
+      return;
+    }
     const cols = $$('.col[data-date]', track);
     const col = cols.find((c) => c.dataset.end >= date) || cols[cols.length - 1];
     if (col) timeline.scrollLeft = Math.max(0, col.offsetLeft - 40);
@@ -512,21 +674,91 @@
     $$('[data-view]', seg).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.view === view)));
     const on = $(`[data-view="${view}"]`, seg);
     if (on && on.offsetWidth) { ind.style.left = `${on.offsetLeft}px`; ind.style.width = `${on.offsetWidth}px`; }
+    syncFilter();
   }
   function setView(v) {
     if (v === view) return;
-    const anchorCol = !mq.matches && timeline.scrollLeft > 200
-      ? $$('.col[data-date]', track).find((c) => c.offsetLeft >= timeline.scrollLeft - 20) : null;
-    const anchor = anchorCol && anchorCol.dataset.date;
+    // Stories runs by date and Projects by company, so there is no shared place to keep: start each at its beginning
     view = v;
     render();
-    if (anchor) scrollToDate(anchor); else timeline.scrollLeft = 0;
+    timeline.scrollLeft = 0;
   }
   function zoom(dir) {
-    let i = clamp(VIEWS.indexOf(view) - dir, 0, VIEWS.length - 1);
-    if (mq.matches && VIEWS[i] === 'months') i = clamp(i - dir, 0, VIEWS.length - 1);
+    const i = clamp(VIEWS.indexOf(view) - dir, 0, VIEWS.length - 1);
     setView(VIEWS[i]);
   }
+
+  /* ── "Work with us": in the top strip, at the end of the bottom bar, and under the intro ── */
+  // four looks to choose from: ?cta=1 ink pill (default), 2 brand orange, 3 the open slot, 4 the founders
+  const CTA_LOOK = ['ink', 'brand', 'slot', 'founders'][(+new URLSearchParams(location.search).get('cta') || 1) - 1] || 'ink';
+  const go = `<i class="cta__go">${icon.arrow}</i>`;
+  const ctaBar = $('.cta');
+  ctaBar.classList.add(`cta--${CTA_LOOK}`);
+  ctaBar.innerHTML = `<span class="cta__in">${{
+    slot: `<i class="cta__fold">${icon.folder}</i><span class="cta__txt"><b>Work with us</b><small>Pick a week for your launch</small></span>${go}`,
+    founders: `<span class="cta__faces" aria-hidden="true"><i>${PEOPLE.puru.mono}</i><i>${PEOPLE.haneef.mono}</i></span>Work with us${go}`,
+  }[CTA_LOOK] || `Work with us${go}`}</span>`;
+  const ctaStrip = ctaBar.cloneNode(true), ctaIntro = ctaBar.cloneNode(true);
+  ctaBar.classList.add('cta--bar');
+  ctaStrip.classList.add('cta--strip');
+  ctaIntro.classList.add('cta--intro');
+  bar.append(Object.assign(document.createElement('span'), { className: 'dyn-div' }), ctaBar);
+  $('.strip').insertBefore(ctaStrip, $('.theme-btn'));
+  // the intro is drawn again with every view, so its button is put back each time
+  const placeCta = () => {
+    const intro = $(mq.matches ? '.ag-intro' : '.intro');
+    if (intro) intro.insertBefore(ctaIntro, $('.legend', intro));
+  };
+
+  /* ── Filter: Projects only ────────────────────────── */
+  // three takes to pick from: ?filter=1 one pill by "Work with us" that drops a list (default), 2 that pill opening sideways
+  // into every filter, 3 a pill growing out of the Projects button with its list opening upward
+  const filterEl = $('.filter');
+  const FILTER_UI = { 1: 'menu', 2: 'island', 3: 'sprout' }[new URLSearchParams(location.search).get('filter')] || 'menu';
+  const svg = (d) => `<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const FILTER_ICON = { lines: svg('M2.5 4h11M4.5 8h7M6.5 12h3'), caret: svg('M4.5 6.5 8 10l3.5-3.5'), x: svg('M5 5l6 6M11 5l-6 6') };
+  const offered = FILTERS.filter((f) => filterCount(f.key));
+  const listed = FILTER_UI === 'menu' || FILTER_UI === 'sprout'; // the lists say how many projects each filter holds
+  filterEl.classList.add(`filter--${FILTER_UI}`);
+  if (FILTER_UI === 'sprout') seg.after(filterEl);
+  filterEl.innerHTML =
+    `<button class="filter__btn" aria-expanded="false">${FILTER_ICON.lines}<span class="filter__cur"></span>${listed ? `<span class="filter__caret">${FILTER_ICON.caret}</span>` : ''}</button>` +
+    `<div class="filter__opts" role="radiogroup" aria-label="Show">` +
+    offered.map((f) => `<button role="radio" data-filter="${f.key}">${f.label}${listed ? `<span class="filter__n">${filterCount(f.key)}</span>` : ''}</button>`).join('') +
+    `${FILTER_UI === 'island' ? `<button class="filter__x" aria-label="Close the filter">${FILTER_ICON.x}</button>` : ''}</div>`;
+
+  function syncFilter() {
+    filterEl.hidden = view !== 'projects';
+    if (filterEl.hidden) return toggleFilter(false);
+    $$('.filter__opts [data-filter]', filterEl).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.filter === filter)));
+    filterEl.classList.toggle('is-on', filter !== 'all');
+    // the pill says what's showing; once a filter is on, a small × goes back to all the work
+    const cur = $('.filter__cur', filterEl);
+    if (cur) cur.innerHTML = filter === 'all' ? 'All work' : `${FILTERS.find((f) => f.key === filter).label}<span class="filter__clear" data-filter="all" aria-label="Show all work">${FILTER_ICON.x}</span>`;
+  }
+  function toggleFilter(on = !filterEl.classList.contains('is-open')) {
+    filterEl.classList.toggle('is-open', on);
+    const b = $('.filter__btn', filterEl);
+    if (b) b.setAttribute('aria-expanded', String(on));
+  }
+  function setFilter(k) {
+    toggleFilter(false);
+    if (k === filter) return;
+    filter = k;
+    render();
+    timeline.scrollLeft = 0;
+    agenda.scrollTop = 0;
+  }
+  filterEl.addEventListener('click', (e) => {
+    const f = e.target.closest('[data-filter]');
+    if (f) return setFilter(f.dataset.filter);
+    if (e.target.closest('.filter__x')) return toggleFilter(false);
+    if (e.target.closest('.filter__btn')) toggleFilter();
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('.filter')) toggleFilter(false); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && filterEl.classList.contains('is-open')) { e.stopImmediatePropagation(); toggleFilter(false); }
+  }, true);
 
   function setOwner(av, label, tint) {
     bar.className = ['dynbar', tint, bar.classList.contains('is-tucked') && 'is-tucked'].filter(Boolean).join(' ');
@@ -682,7 +914,7 @@
   function openNote(ev, el) {
     // measure the source first: opening swaps the bar's buttons for the owner pill, which would hide a bar button
     const fromRect = el.getBoundingClientRect();
-    const pill = el.classList.contains('dyn-cta'); // from "Work with us": grow out of the pill, fade back into it
+    const pill = el.classList.contains('cta'); // from "Work with us": grow out of the pill, fade back into it
     closeAll(true);
     note.style.transform = note.style.transition = focusEl.style.opacity = '';
     const tint = tintOf(ev);
@@ -749,7 +981,7 @@
       ghost.hidden = true; focusEl.hidden = true;
     };
     if (instant || reduced.matches || !document.contains(o.el)) return finish();
-    if (o.el.classList.contains('dyn-cta')) {
+    if (o.el.classList.contains('cta')) {
       // back into "Work with us": the same card shrinks and moves back, content and all
       const r = o.el.getBoundingClientRect();
       if (!r.width) return finish();
@@ -861,9 +1093,13 @@
         <dl class="pp-facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
         ${C.results ? `<div class="pp-results">${C.results.map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>` : ''}
         ${C.blocks.map(blockHTML).join('')}
+        ${shotsHTML(C.stack)}
         ${endHTML(nextCase(C))}
       </article>`;
   }
+
+  // the work's pictures close the story, one after another at full width, just before the footer
+  const shotsHTML = (shots) => (shots && shots.length ? `<section class="pp-sec pp-shots">${shots.map((s) => `<img src="${s}" alt="" loading="lazy">`).join('')}</section>` : '');
 
   // a project or moment from Notion: everything comes from its row and page body
   const WORKS = ALL.filter((e) => e.type === 'case' || e.type === 'project');
@@ -879,7 +1115,6 @@
       ['Part of', parent && `<button class="linkish" data-open-id="${parent.id}">${strip(parent.title)} →</button>`],
       ['Live', ev.live && `<a href="${ev.live}" target="_blank" rel="noopener">${ev.live.replace(/^https?:\/\/(www\.)?/, '')} ↗</a>`],
     ].filter(([, v]) => v);
-    const photos = ev.photos || [];
     return `<article class="paper">
         ${headHTML(ev.client || '37degree', ev.date, ev.end, ev.end ? durationOf(ev.date, ev.end) : '')}
         <header class="pp-hero">
@@ -887,8 +1122,8 @@
           ${ev.summary ? `<p class="pp-lede">${ev.summary}</p>` : ''}
         </header>
         <dl class="pp-facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
-        ${photos.length > 4 ? `<section class="pp-sec">${galleryHTML(photos.slice(4))}</section>` : ''}
         ${ev.body ? `<section class="pp-sec pp-prose">${ev.body}</section>` : ''}
+        ${shotsHTML(ev.photos)}
         ${endHTML(next)}
       </article>`;
   }
@@ -915,67 +1150,15 @@
     }
   }
 
-  // ?layout=center keeps the paper in the middle with screens in both margins;
-  // by default the paper sits on the right and the left half is a stage for the work
-  const CENTERED = new URLSearchParams(location.search).get('layout') === 'center';
-  if (CENTERED) document.body.classList.add('sheet-center');
-  const stageWidth = () => {
-    const paper = !CENTERED && !mq.matches && $('.paper', sheet);
-    return paper ? paper.getBoundingClientRect().left : 0;
-  };
-
-  // the work's screens leave the card and settle beside the paper
-  const SPOTS = CENTERED
-    ? [{ side: -1, y: 0.3, r: -6 }, { side: 1, y: 0.4, r: 5 }, { side: -1, y: 0.72, r: 3 }, { side: 1, y: 0.8, r: -4 }]
-    : [{ x: 0.3, y: 0.3, r: -6 }, { x: 0.68, y: 0.42, r: 5 }, { x: 0.34, y: 0.72, r: 3 }, { x: 0.7, y: 0.82, r: -4 }];
-  function flyOut(card, shots) {
-    if (!card || !shots || !shots.length || reduced.matches || mq.matches) return null;
-    const paper = $('.paper', sheet);
-    const frame = $('.fold__papers', card) || $('.frame', card) || $('.stack', card) || $('.thumb', card) || card;
-    const r = frame.getBoundingClientRect();
-    if (!paper || r.right < 0 || r.left > innerWidth) return null;
-    const gutter = (innerWidth - paper.offsetWidth) / 2;
-    const stage = stageWidth();
-    const tw = CENTERED ? Math.min(gutter - 48, 340) : Math.min(stage * 0.42, 360);
-    if (tw < 120) return null;
-    const th = tw * 0.66;
-    const start = rectKeys(r, '10px');
-    // out of a folder, each screen leaves from its own paper: same spot, same tilt
-    const papers = frame.classList.contains('fold__papers') ? $$('img', frame) : null;
-    const from = (i) => (papers && papers[i]
-      ? { ...start, transform: getComputedStyle(papers[i]).transform.replace('none', 'rotate(0deg)'), opacity: 0 }
-      : { ...start, transform: 'rotate(0deg)', opacity: i === 0 ? 1 : 0 });
-    const anims = shots.slice(0, SPOTS.length).map((src, i) => {
-      const img = document.createElement('img');
-      img.src = src;
-      if (papers) img.className = 'fold-fly';
-      flyLayer.appendChild(img);
-      const s = SPOTS[i];
-      const cx = CENTERED ? (s.side < 0 ? gutter / 2 : innerWidth - gutter / 2) : stage * s.x;
-      const end = { left: `${cx - tw / 2}px`, top: `${innerHeight * s.y - th / 2}px`, width: `${tw}px`, height: `${th}px`, borderRadius: '10px' };
-      return img.animate(
-        papers && papers[i]
-          ? [from(i), { opacity: 1, offset: 0.25 }, { ...end, transform: `rotate(${s.r}deg)`, opacity: 1 }]
-          : [from(i), { ...end, transform: `rotate(${s.r}deg)`, opacity: 1 }],
-        { duration: 680, delay: 120, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' }); // all at once, together with the sheet
-    });
-    // a folder's papers cross-fade into their flying copies instead of vanishing, so nothing jumps over the glass
-    const fades = papers ? papers.map((p) => p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 80, delay: 120, easing: 'ease-out', fill: 'forwards' })) : null;
-    if (!papers) card.classList.add('is-flown');
-    return { card, anims, frame, papers, fades };
-  }
-  // click any image of the work to see it whole: on the left stage, or full screen on phones and the centred layout
+  // click any image of the work to see it whole, full screen
   const viewer = document.createElement('div');
   viewer.className = 'viewer';
   viewer.hidden = true;
   viewer.innerHTML = '<img class="viewer__pic" alt=""><span class="viewer__n"></span>';
   document.body.appendChild(viewer);
   let viewing = null; // { list, i }
-  const sheetPics = () => [...new Set([...$$('.flylayer img:not(.print-fly)'), ...$$('.paper img')].map((i) => i.getAttribute('src')))];
-  function stageBox() {
-    const w = stageWidth();
-    return w ? { left: 0, top: 0, width: w, height: innerHeight } : { left: 0, top: 0, width: innerWidth, height: innerHeight };
-  }
+  const sheetPics = () => [...new Set($$('.paper img').map((i) => i.getAttribute('src')))];
+  const stageBox = () => ({ left: 0, top: 0, width: innerWidth, height: innerHeight });
   // dir 1: the current image leaves to the left and the next comes in from the right; -1 the other way
   async function showPic(i, fromEl, dir = 1) {
     const { list } = viewing;
@@ -1015,10 +1198,9 @@
     viewing = { list, i: 0, shown: false };
     const S = stageBox();
     viewer.style.width = `${S.width}px`;
-    viewer.classList.toggle('is-full', S.width === innerWidth);
+    viewer.classList.add('is-full');
     viewer.hidden = false;
     requestAnimationFrame(() => viewer.classList.add('is-in'));
-    flyLayer.classList.add('is-dim');
     showPic(Math.max(0, list.indexOf(src)), fromEl);
   }
   // phones: swipe left for the next image, right for the previous; a tap still closes
@@ -1035,48 +1217,16 @@
     if (!viewing) return;
     viewing = null;
     viewer.classList.remove('is-in');
-    flyLayer.classList.remove('is-dim');
     const hide = () => { if (!viewing) viewer.hidden = true; };
     instant ? hide() : setTimeout(hide, 220);
   }
-
-  function flyBack(f, instant) {
-    if (!f) return;
-    const clones = f.anims.map((a) => a.effect.target);
-    const done = () => { clones.forEach((c) => c.remove()); f.card.classList.remove('is-flown'); f.fades && f.fades.forEach((x) => x.cancel()); };
-    if (instant) return done();
-    // every screen heads home at once, at the same pace the sheet drops
-    const pick = (k) => ({ left: k.left, top: k.top, width: k.width, height: k.height, borderRadius: k.borderRadius, transform: k.transform, opacity: k.opacity });
-    // into a folder, each screen lands on its own paper (measured now, in case the card moved or isn't hovered)
-    // and cross-fades into it, so it settles behind the glass instead of popping in
-    const box = f.papers && rectKeys(f.frame.getBoundingClientRect(), '10px');
-    const back = f.anims.map((a, i) => {
-      // first and last keyframes: the way out may have extra steps (a fade) between them
-      const kf = a.effect.getKeyframes().map(pick);
-      const from = kf[0], to = kf[kf.length - 1];
-      const home = f.papers && f.papers[i];
-      const frames = home
-        ? [to, { opacity: 1, offset: 0.7 }, { ...box, transform: getComputedStyle(home).transform.replace('none', 'rotate(0deg)'), opacity: 0 }]
-        : [to, from];
-      const anim = a.effect.target.animate(frames, { duration: 480, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'both' });
-      a.cancel();
-      return anim;
-    });
-    // and the papers fade back in underneath as the copies fade out
-    if (f.papers) f.fades = f.papers.map((p) => { const x = p.animate([{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], { duration: 480, fill: 'forwards' }); return x; })
-      .concat(f.fades || []);
-    Promise.all(back.map((x) => x.finished)).then(done, done);
-    setTimeout(done, 700);
-  }
-
 
   function openProject(ev, srcEl) {
     if (!ev) return;
     closeAll(true);
     const card = srcEl || $(`.card[data-id="${ev.id}"]`, mq.matches ? agenda : track);
     showSheet(projectSheetHTML(ev), ev.id);
-    const fly = card && ev.photos ? flyOut(card, ev.photos) : null;
-    open = { kind: 'sheet', id: ev.id, el: card, fly };
+    open = { kind: 'sheet', id: ev.id, el: card };
     setOwner({ mono: (ev.client || '37')[0] }, ev.client || 'By 37degree');
     markVisited(ev.id);
     history.replaceState(null, '', `${location.pathname}${location.search}#work/${ev.id}`);
@@ -1088,8 +1238,7 @@
     closeAll(true);
     const caseCard = $(`.card--case[data-case="${id}"]`, mq.matches ? agenda : track);
     showSheet(sheetHTML(C), id);
-    const fly = opts.noFly ? null : flyOut(caseCard, C.stack);
-    open = { kind: 'sheet', id, el: srcEl || caseCard, fly };
+    open = { kind: 'sheet', id, el: srcEl || caseCard };
     setOwner(C.logo ? { logo: C.logo } : { mono: C.client[0] }, C.short);
     markVisited(caseCard && caseCard.dataset.id, srcEl && srcEl.dataset.id);
     history.replaceState(null, '', `${location.pathname}${location.search}#work/${id}`);
@@ -1162,13 +1311,12 @@
   function closeSheet(o, instant) {
     closeViewer(true);
     sheetScroll.set(o.id, sheet.scrollTop);
-    // the whole sheet drops straight down from where you are, while the screens fly home
+    // the whole sheet drops straight down from where you are
     sheet.classList.add('is-leaving');
     scrim.classList.remove('is-in');
     bar.style.left = '';
     bar.classList.remove('is-tucked');
     $$('video', sheet).forEach((v) => v.pause());
-    flyBack(o.fly, instant);
     const hide = () => {
       if (open && open.kind === 'sheet') return;
       sheet.hidden = true; scrim.hidden = true;
@@ -1258,15 +1406,16 @@
   document.addEventListener('click', (e) => {
     const t = e.target;
     if (viewing && t.closest('.viewer')) return closeViewer();
-    const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img, .flylayer img:not(.print-fly)');
+    const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img');
     if (pic) return openViewer(pic.getAttribute('src'), pic);
-    // "Work with us" opens the new-event invite, lifting off the bar's button; the mailto stays as the fallback
-    const cta = t.closest('.dyn-cta, .pp-btn');
+    // "Work with us" opens the new-event invite; the mailto stays as the fallback
+    const cta = t.closest('.cta, .pp-btn');
     if (cta) {
       e.preventDefault();
       const slot = ALL.find((x) => x.type === 'slot');
       closeAll(true);
-      return openNote(slot, $('.dyn-cta'));
+      // it lifts off the button you pressed, or from inside a sheet, off the one in the bar
+      return openNote(slot, cta.classList.contains('cta') ? cta : ctaBar);
     }
     const v = t.closest('[data-view]');
     if (v) return setView(v.dataset.view);
@@ -1277,7 +1426,7 @@
       const id = nextBtn.dataset.caseNext;
       sheetScroll.delete(id); // Next always starts the next piece from the top
       closeAll(true);
-      if (!mq.matches) scrollToDate(CASES[id].start);
+      if (!mq.matches) scrollToDate(CASES[id].start, `[data-case="${id}"]`);
       return requestAnimationFrame(() => openCase(id));
     }
     const caseBar = t.closest('[data-case-bar]');
@@ -1288,16 +1437,16 @@
       if (!target) return;
       if (openBtn.classList.contains('pp-next')) sheetScroll.delete(target.type === 'case' ? target.case : target.id);
       if (target.type === 'case') return openCase(target.case);
-      if (open && open.kind === 'sheet' && !mq.matches) scrollToDate(target.date);
+      if (open && open.kind === 'sheet' && !mq.matches) scrollToDate(target.date, `[data-id="${target.id}"]`);
       return requestAnimationFrame(() => openProject(target));
     }
     const card = t.closest('button.card, button.mrow, button[data-day]');
     if (!card || dragMoved) return;
     const ev = BY_ID[card.dataset.id || card.dataset.day];
     if (ev.type === 'case') return openCase(ev.case, null, card);
-    if (ev.type === 'video') return openCase('sidecar', 'video', card, { noFly: true, play: true });
+    if (ev.type === 'video') return openCase('sidecar', 'video', card, { play: true });
     if (isProject(ev)) return openProject(ev, card);
-    if (ev.case) return openCase(ev.case, ev.section, card, { noFly: true });
+    if (ev.case) return openCase(ev.case, ev.section, card);
     openNote(ev, card);
   });
 
@@ -1313,7 +1462,6 @@
   });
 
   addEventListener('resize', () => {
-    if (open && open.kind === 'sheet' && open.fly) { flyBack(open.fly, true); open.fly = null; }
     if (!mq.matches) { layoutBars(); buildMinimap(); }
   });
   mq.addEventListener('change', () => { if (mq.matches && view === 'months') view = 'days'; render(); });
@@ -1322,12 +1470,12 @@
     const m = location.hash.match(/^#work\/([\w-]+)/);
     if (!m || (open && open.id === m[1])) return;
     if (CASES[m[1]]) {
-      if (!mq.matches) scrollToDate(CASES[m[1]].start);
+      if (!mq.matches) scrollToDate(CASES[m[1]].start, `[data-case="${m[1]}"]`);
       return setTimeout(() => openCase(m[1]), 250);
     }
     const ev = BY_ID[m[1]];
     if (!ev || !isProject(ev)) return;
-    if (!mq.matches) scrollToDate(ev.date);
+    if (!mq.matches) scrollToDate(ev.date, `[data-id="${ev.id}"]`);
     setTimeout(() => openProject(ev), 250);
   }
   addEventListener('hashchange', fromHash);

@@ -131,6 +131,7 @@ window.CMS = {
    "date": "2025-02-03",
    "highlight": true,
    "tbc": true,
+   "parent": "case-kampanion",
    "type": "quote",
    "title": "Don’t build a new <em>destination</em>."
   },
@@ -197,6 +198,7 @@ window.CMS = {
    "date": "2025-09-08",
    "highlight": true,
    "tbc": true,
+   "parent": "case-sidecar",
    "type": "testimonial",
    "who": {
     "name": "Sudhanshu",
@@ -208,6 +210,7 @@ window.CMS = {
    "id": "sidecar-we-launch-at-iics-can-you-do-aed2",
    "date": "2025-09-08",
    "tbc": true,
+   "parent": "case-sidecar",
    "type": "note",
    "title": "Sidecar: “we launch at IICS. can you do everything?”",
    "detail": "No brand, no collateral, no landing page, no booth. Ten days on the clock."
@@ -253,6 +256,7 @@ window.CMS = {
    "id": "iics-2025-booth-live-in-mumbai-862c",
    "date": "2025-09-18",
    "tbc": true,
+   "parent": "case-sidecar",
    "type": "note",
    "title": "IICS 2025 · booth live in Mumbai",
    "detail": "200+ exhibitors. 25,000 trade visitors. Three days on the floor.",
@@ -307,6 +311,7 @@ window.CMS = {
    "date": "2026-01-01",
    "highlight": true,
    "tbc": true,
+   "parent": "goatfish-oro-moca-branding-website-f28c",
    "type": "testimonial",
    "who": {
     "name": "Prado",
@@ -374,6 +379,7 @@ window.CMS = {
    "date": "2026-03-23",
    "highlight": true,
    "tbc": true,
+   "parent": "case-deccan",
    "type": "quote",
    "title": "Every section answers one buyer <em>question</em>."
   },
@@ -461,6 +467,7 @@ window.CMS = {
    "date": "2026-04-03",
    "highlight": true,
    "tbc": true,
+   "parent": "aria-music-product-design-a4fc",
    "type": "testimonial",
    "who": {
     "name": "Omar Alsafadi",
@@ -493,6 +500,7 @@ window.CMS = {
    "id": "sec-4-world-cup-player-card-web-app-3b84",
    "date": "2026-06-15",
    "tbc": true,
+   "parent": "solana-ecosystem-call-marketing-desi-f7c7",
    "type": "moment",
    "title": "SEC 4: World Cup player <em>card</em> web app",
    "client": "Solana Ecosystem Call",
@@ -504,8 +512,7 @@ window.CMS = {
     "assets/img/mock/sec4-1.jpg",
     "assets/img/mock/sec4-2.jpg",
     "assets/img/mock/sec4-3.jpg"
-   ],
-   "parent": "solana-ecosystem-call-marketing-desi-f7c7"
+   ]
   },
   {
    "id": "footify-football-card-generator-camp-2be3",
@@ -528,6 +535,7 @@ window.CMS = {
    "id": "sec-july-billboard-series-for-22-sup-c954",
    "date": "2026-07-01",
    "highlight": true,
+   "parent": "solana-ecosystem-call-marketing-desi-f7c7",
    "type": "moment",
    "title": "SEC July <em>billboard</em> series for ~22 Superteam chapters",
    "client": "Solana Ecosystem Call",
@@ -540,13 +548,13 @@ window.CMS = {
     "assets/img/mock/secjuly-1.jpg",
     "assets/img/mock/secjuly-2.jpg",
     "assets/img/mock/secjuly-3.jpg"
-   ],
-   "parent": "solana-ecosystem-call-marketing-desi-f7c7"
+   ]
   },
   {
    "id": "lab0ai-pwc-the-pitch-deck-c336",
    "date": "2026-08-01",
    "highlight": true,
+   "parent": "lab0ai-launch-product-films-79ef",
    "type": "moment",
    "title": "lab0.ai × PwC: the pitch <em>deck</em>",
    "client": "lab0.ai (YC)",
@@ -558,8 +566,7 @@ window.CMS = {
     "assets/img/mock/lab0pwc-1.jpg",
     "assets/img/mock/lab0pwc-2.jpg",
     "assets/img/mock/lab0pwc-3.jpg"
-   ],
-   "parent": "lab0ai-launch-product-films-79ef"
+   ]
   },
   {
    "id": "9nidhi-naming-intro-deck-df30",
@@ -582,6 +589,7 @@ window.CMS = {
    "id": "sec-5-solana-salesmen-8986",
    "date": "2026-08-10",
    "tbc": true,
+   "parent": "solana-ecosystem-call-marketing-desi-f7c7",
    "type": "moment",
    "title": "SEC 5: “Solana <em>Salesmen</em>”",
    "client": "Solana Ecosystem Call",
@@ -594,8 +602,7 @@ window.CMS = {
     "assets/img/mock/sec5-1.jpg",
     "assets/img/mock/sec5-2.jpg",
     "assets/img/mock/sec5-3.jpg"
-   ],
-   "parent": "solana-ecosystem-call-marketing-desi-f7c7"
+   ]
   },
   {
    "id": "deccan-ai-the-bumblebee-launch-film-987d",
