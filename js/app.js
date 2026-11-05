@@ -10,7 +10,7 @@
   const now = new Date();
   const TODAY = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const ROWS = 7;
-  const VIEWS = ['days', 'projects']; // shown as Stories and Projects; the Months view is no longer offered
+  const VIEWS = ['days', 'projects', 'explore']; // shown as Stories, Projects and Exploration; the Months view is no longer offered
   const MAIL = 'mailto:puru@37degr.ee?cc=haneef@37degr.ee&subject=' + encodeURIComponent('Work with 37degree');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mq = matchMedia('(max-width: 760px)');
@@ -508,10 +508,142 @@
     </div>`;
   }
 
+  /* ── Exploration: everything we've made, on an endless board ── */
+  // every image and clip from the work, once each: never the stand-ins in assets/img/mock or assets/img/placeholder,
+  // and a clip's still only as its poster. Mixed up so different clients and kinds of work meet, the same for everyone
+  const SIZES = (window.CMS && window.CMS.sizes) || {};
+  const PIECES = (() => {
+    const seen = new Set(), out = [];
+    const add = (src, ev, kind, poster) => {
+      if (!src || seen.has(src) || /\/img\/(mock|placeholder)\//.test(src)) return;
+      seen.add(src);
+      const C = ev.type === 'case' && CASES[ev.case];
+      const client = C ? C.client : ev.client || '37degree';
+      const [w, h] = SIZES[poster || src] || [4, 3];
+      out.push({ src, ev, kind, poster, client, title: C ? strip(C.title) : workTitle(ev.title, client), ar: w / h });
+    };
+    for (const ev of ALL) {
+      if (ev.type === 'case') {
+        const C = CASES[ev.case];
+        [...(C.stack || []), ...C.blocks.flatMap((b) => b.img || [])].forEach((src) => add(src, ev, 'img'));
+        if (C.video) add(C.video, ev, 'video', C.cover);
+      } else if (ev.type === 'project' || ev.type === 'moment') {
+        const stills = (ev.photos || []).filter((src) => /-still\.jpg$/.test(src));
+        (ev.clips || []).forEach((c) => add(c, ev, 'video', stills.find((x) => x.includes(c.split('/').pop().replace(/\.\w+$/, '-still'))) || stills[0]));
+        (ev.photos || []).filter((src) => !/-still\.jpg$/.test(src)).forEach((src) => add(src, ev, 'img'));
+      }
+    }
+    // a seeded shuffle, then no two pieces of the same work side by side where it can be helped
+    let seed = 37;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+    for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+    for (let i = 1; i < out.length - 1; i++) if (out[i].ev === out[i - 1].ev) [out[i], out[i + 1]] = [out[i + 1], out[i]];
+    return out;
+  })();
+
+  // columns of pins, each looping top to bottom on its own, the set of them repeating side to side: no edge anywhere
+  const board = $('.board');
+  let cam = { x: 0, y: 0 }, cols = [], boardW = 1, built = '';
+  const pinHTML = (p, i) => `<button class="pin" data-pin="${i}" style="aspect-ratio:${p.ar.toFixed(3)}" aria-label="${p.client}: ${strip(p.title)}">
+      ${p.kind === 'video'
+        ? `<video src="${p.src}"${p.poster ? ` poster="${p.poster}"` : ''} muted loop playsinline preload="none"></video>`
+        : `<img src="${p.src}" alt="" loading="lazy" decoding="async">`}
+      <span class="pin__tag">${clientAvatar(p.client)}<span class="pin__who"><b>${p.client}</b><i>${p.title}</i></span></span>
+    </button>`;
+  const pinClips = new IntersectionObserver((entries) => entries.forEach(({ target, isIntersecting }) => {
+    if (isIntersecting && !reduced.matches) target.play().catch(() => {}); else target.pause();
+  }), { root: board, threshold: 0.25 });
+  function buildBoard() {
+    const vw = board.clientWidth || innerWidth, vh = board.clientHeight || innerHeight;
+    const cw = mq.matches ? 150 : 250, gap = mq.matches ? 12 : 20, step = cw + gap;
+    const key = `${cw}:${vw}:${vh}`;
+    if (key === built) return applyCam();
+    built = key;
+    // enough columns that one column never shows twice across the screen
+    const n = Math.max(mq.matches ? 4 : 8, Math.ceil((vw + step) / step) + 1);
+    const heights = Array(n).fill(0), runs = [...Array(n)].map(() => []);
+    PIECES.forEach((p, i) => {
+      const c = heights.indexOf(Math.min(...heights));
+      runs[c].push(i);
+      heights[c] += cw / p.ar + gap;
+    });
+    boardW = n * step;
+    pinClips.disconnect();
+    board.innerHTML = runs.map((run, c) => {
+      // a column repeats its run as often as it takes to cover the screen and one run more, so the loop never shows its seam
+      const copies = Math.max(2, Math.ceil(vh / Math.max(heights[c], 1)) + 1);
+      const one = run.map((i) => pinHTML(PIECES[i], i)).join('');
+      return `<div class="board__col" style="width:${cw}px;--gap:${gap}px">${Array(copies).fill(`<div class="board__run">${one}</div>`).join('')}</div>`;
+    }).join('');
+    cols = $$('.board__col', board).map((el, c) => ({ el, x: c * step, h: heights[c], off: (c * 211) % Math.max(heights[c], 1) }));
+    $$('video', board).forEach((v) => pinClips.observe(v));
+    applyCam();
+  }
+  const wrap = (v, m) => ((v % m) + m) % m;
+  function applyCam() {
+    const vw = board.clientWidth, step = cols.length ? boardW / cols.length : 1;
+    cols.forEach((c) => {
+      const x = wrap(c.x - cam.x + step, boardW) - step;
+      const shown = x < vw;
+      c.el.style.visibility = shown ? '' : 'hidden';
+      if (shown) c.el.style.transform = `translate3d(${x}px, ${-wrap(cam.y + c.off, c.h)}px, 0)`;
+    });
+  }
+  // drag it any way, with a little glide when you let go; the wheel and trackpad move it too
+  let pan = null, glide = 0, panMoved = false;
+  const moveBy = (dx, dy) => { cam.x += dx; cam.y += dy; applyCam(); };
+  board.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    cancelAnimationFrame(glide);
+    pan = { x: e.clientX, y: e.clientY, t: performance.now(), vx: 0, vy: 0 };
+    panMoved = false;
+  });
+  addEventListener('pointermove', (e) => {
+    if (!pan) return;
+    const dx = e.clientX - pan.x, dy = e.clientY - pan.y, now = performance.now(), dt = Math.max(1, now - pan.t);
+    if (!panMoved && Math.hypot(dx, dy) > 5) { panMoved = true; board.setPointerCapture?.(e.pointerId); board.classList.add('is-panning'); }
+    if (!panMoved) return;
+    pan.vx = -dx / dt; pan.vy = -dy / dt;
+    pan.x = e.clientX; pan.y = e.clientY; pan.t = now;
+    moveBy(-dx, -dy);
+  });
+  addEventListener('pointerup', () => {
+    if (!pan) return;
+    const { vx, vy } = pan;
+    pan = null;
+    board.classList.remove('is-panning');
+    setTimeout(() => (panMoved = false), 0);
+    if (reduced.matches) return;
+    let v = { x: vx * 16, y: vy * 16 };
+    const tick = () => {
+      v = { x: v.x * 0.92, y: v.y * 0.92 };
+      if (Math.hypot(v.x, v.y) < 0.4) return;
+      moveBy(v.x, v.y);
+      glide = requestAnimationFrame(tick);
+    };
+    glide = requestAnimationFrame(tick);
+  });
+  board.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) return;
+    e.preventDefault();
+    const k = e.deltaMode === 1 ? 32 : 1;
+    // a plain mouse wheel only scrolls one way; holding shift turns it sideways
+    e.shiftKey && !e.deltaX ? moveBy(e.deltaY * k, 0) : moveBy(e.deltaX * k, e.deltaY * k);
+  }, { passive: false });
+  board.addEventListener('keydown', (e) => {
+    const by = { ArrowRight: [160, 0], ArrowLeft: [-160, 0], ArrowDown: [0, 160], ArrowUp: [0, -160] }[e.key];
+    if (!by || viewing) return;
+    e.preventDefault();
+    moveBy(...by);
+  });
+  addEventListener('resize', () => { if (view === 'explore') buildBoard(); });
+
   /* ── Render ───────────────────────────────────────── */
   function render() {
     closeAll(true);
     document.body.dataset.showing = view;
+    board.hidden = view !== 'explore';
+    if (view === 'explore') { requestAnimationFrame(() => { buildBoard(); board.focus({ preventScroll: true }); }); return syncBar(); }
     if (mq.matches) return renderAgenda();
     side.innerHTML = sideHTML();
     if (view === 'projects') { renderProjects(); placeCta(); return syncBar(); }
@@ -802,7 +934,8 @@
   const svg = (d) => `<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const FILTER_ICON = { lines: svg('M2.5 4h11M4.5 8h7M6.5 12h3'), caret: svg('M4.5 6.5 8 10l3.5-3.5'), x: svg('M5 5l6 6M11 5l-6 6') };
   const offered = FILTERS.filter((f) => filterCount(f.key));
-  seg.after(filterEl);
+  // it sits right after the Projects button, between it and Exploration
+  $('[data-view="projects"]', seg).after(filterEl);
   filterEl.innerHTML =
     `<button class="filter__btn" aria-expanded="false">${FILTER_ICON.lines}<span class="filter__cur"></span><span class="filter__caret">${FILTER_ICON.caret}</span></button>` +
     `<div class="filter__opts" role="radiogroup" aria-label="Show">` +
@@ -1236,9 +1369,10 @@
   const viewer = document.createElement('div');
   viewer.className = 'viewer';
   viewer.hidden = true;
-  viewer.innerHTML = '<img class="viewer__pic" alt=""><span class="viewer__n"></span>';
+  // the board's pieces bring their clips and who they're for; a sheet's images are plain pictures
+  viewer.innerHTML = '<img class="viewer__pic" alt=""><video class="viewer__vid" muted loop playsinline hidden></video><span class="viewer__n"></span><div class="viewer__cap" hidden></div>';
   document.body.appendChild(viewer);
-  let viewing = null; // { list, i }
+  let viewing = null; // { list, i, items? }
   const sheetPics = () => [...new Set($$('.paper img').map((i) => i.getAttribute('src')))];
   const stageBox = () => ({ left: 0, top: 0, width: innerWidth, height: innerHeight });
   // dir 1: the current image leaves to the left and the next comes in from the right; -1 the other way
@@ -1246,18 +1380,30 @@
     const { list } = viewing;
     viewing.i = (i + list.length) % list.length;
     const src = list[viewing.i];
+    const piece = viewing.items && viewing.items[viewing.i];
+    const clip = piece && piece.kind === 'video';
     const probe = new Image();
-    probe.src = src;
-    await probe.decode().catch(() => {});
+    if (!clip) { probe.src = src; await probe.decode().catch(() => {}); }
     if (!viewing) return;
-    const S = stageBox(), pad = mq.matches ? 16 : 48;
-    const k = Math.min((S.width - pad * 2) / (probe.naturalWidth || 4), (S.height - pad * 2) / (probe.naturalHeight || 3), 1.6);
-    const w = (probe.naturalWidth || 4) * k, h = (probe.naturalHeight || 3) * k;
-    const to = { left: S.left + (S.width - w) / 2, top: S.top + (S.height - h) / 2, width: w, height: h };
-    const img = $('.viewer__pic', viewer);
+    const [nw, nh] = clip ? SIZES[piece.poster] || [16, 9] : [probe.naturalWidth || 4, probe.naturalHeight || 3];
+    const S = stageBox(), pad = mq.matches ? 16 : 48, capH = piece ? (mq.matches ? 96 : 72) : 0;
+    const k = Math.min((S.width - pad * 2) / nw, (S.height - pad * 2 - capH) / nh, 1.6);
+    const w = nw * k, h = nh * k;
+    const to = { left: S.left + (S.width - w) / 2, top: S.top + (S.height - h - capH) / 2, width: w, height: h };
+    const vid = $('.viewer__vid', viewer);
+    vid.hidden = !clip;
+    $('.viewer__pic', viewer).hidden = clip;
+    const img = clip ? vid : $('.viewer__pic', viewer);
+    // under the piece: whose it is, and the way into the rest of that work
+    const cap = $('.viewer__cap', viewer);
+    cap.hidden = !piece;
+    if (piece) {
+      cap.innerHTML = `${clientAvatar(piece.client)}<span class="viewer__who"><b>${piece.client}</b><i>${piece.title}</i></span><button class="viewer__go" data-go="${piece.ev.id}">View project ${icon.arrow}</button>`;
+      Object.assign(cap.style, { left: `${to.left}px`, top: `${to.top + h + 16}px`, width: `${w}px` });
+    }
     const had = viewing.shown;
     viewing.shown = true;
-    if (had && !reduced.matches) {
+    if (had && !reduced.matches && !clip && img.getAttribute('src')) {
       const old = img.cloneNode();
       old.classList.remove('viewer__pic');
       viewer.appendChild(old);
@@ -1267,6 +1413,7 @@
       old.animate([{ transform: 'none' }, { transform: `translateX(${out}px) rotate(${dir * -3}deg)` }], { duration: 560, easing: 'cubic-bezier(.5,0,.2,1)', fill: 'forwards' }).finished.then(gone, gone);
     }
     img.src = src;
+    if (clip) img.play().catch(() => {}); else vid.pause();
     $('.viewer__n', viewer).textContent = list.length > 1 ? `${viewing.i + 1} / ${list.length} · ${mq.matches ? 'swipe' : '← →'} to browse` : '';
     Object.assign(img.style, { left: `${to.left}px`, top: `${to.top}px`, width: `${w}px`, height: `${h}px` });
     if (reduced.matches) return;
@@ -1295,9 +1442,19 @@
     e.preventDefault(); // no click, so the swipe doesn't close the viewer
     showPic(viewing.i + (dx < 0 ? 1 : -1), null, dx < 0 ? 1 : -1);
   });
+  // a piece from the board opens with every piece on it to browse
+  function openPiece(i, fromEl) {
+    viewing = { list: PIECES.map((p) => p.src), items: PIECES, i: 0, shown: false };
+    viewer.style.width = `${innerWidth}px`;
+    viewer.classList.add('is-full');
+    viewer.hidden = false;
+    requestAnimationFrame(() => viewer.classList.add('is-in'));
+    showPic(i, fromEl);
+  }
   function closeViewer(instant) {
     if (!viewing) return;
     viewing = null;
+    $('.viewer__vid', viewer).pause();
     viewer.classList.remove('is-in');
     const hide = () => { if (!viewing) viewer.hidden = true; };
     instant ? hide() : setTimeout(hide, 220);
@@ -1487,7 +1644,16 @@
 
   document.addEventListener('click', (e) => {
     const t = e.target;
+    const go = viewing && t.closest('.viewer__go');
+    if (go) {
+      const target = BY_ID[go.dataset.go];
+      closeViewer(true);
+      return target.type === 'case' ? openCase(target.case) : openProject(target);
+    }
+    if (viewing && t.closest('.viewer__cap')) return;
     if (viewing && t.closest('.viewer')) return closeViewer();
+    const pin = t.closest('.pin');
+    if (pin) return panMoved ? undefined : openPiece(Number(pin.dataset.pin), $('img, video', pin));
     const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img');
     if (pic) return openViewer(pic.getAttribute('src'), pic);
     // "Work with us" opens the new-event invite; the mailto stays as the fallback

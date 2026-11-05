@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gentium+Plus:ital@1&family=Mrs+Saint+Delafield&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=proj45">
+  <link rel="stylesheet" href="css/site.css?v=proj48">
   <script>try { const t = localStorage.getItem('37cal.theme'); if (t) document.documentElement.dataset.theme = t; } catch (_) {}</script>
 </head>
 <body>
@@ -29,6 +29,7 @@
   <main class="stage">
     <div class="timeline" tabindex="0" aria-label="Studio calendar, scroll sideways"><div class="track"></div></div>
     <div class="agenda" aria-label="Studio calendar"></div>
+    <div class="board" tabindex="0" aria-label="Everything we've made: drag to explore" hidden></div>
   </main>
 
   <div class="dynbar">
@@ -36,8 +37,10 @@
       <span class="dyn-ind" aria-hidden="true"></span>
       <button role="radio" data-view="days">Stories</button>
       <button role="radio" data-view="projects">Projects</button>
+      <div class="filter filter--sprout" hidden></div>
+      <button role="radio" data-view="explore">Exploration</button>
     </div>
-    <div class="filter filter--sprout" hidden></div>
+    <span class="dyn-hint" aria-hidden="true">Drag to explore</span>
     <span class="dyn-div" aria-hidden="true"></span>
     <div class="dyn-step">
       <button data-step="-1" aria-label="Previous project"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 3.5 5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -60,9 +63,9 @@
   <div class="flylayer" aria-hidden="true"></div>
   <aside class="sheet" role="dialog" aria-modal="true" aria-label="Case study" hidden></aside>
 
-  <script src="js/data.js?v=proj45"></script>
-  <script src="js/cms.js?v=proj45"></script>
-  <script src="js/app.js?v=proj45"></script>
+  <script src="js/data.js?v=proj48"></script>
+  <script src="js/cms.js?v=proj48"></script>
+  <script src="js/app.js?v=proj48"></script>
   <!-- inner shadow for the engraved signature at the end of a case study -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
     <filter id="engrave" x="-5%" y="-10%" width="110%" height="130%" color-interpolation-filters="sRGB">
