@@ -1078,15 +1078,15 @@ button.card--slot.card--folder:hover .fold__front { transform: perspective(520px
   :root:not([data-theme="light"]) .card--folder { --av-l: 52%; --chip-bg: rgba(255, 255, 255, .12); --chip-fg: rgba(255, 255, 255, .92); --chip-line: rgba(255, 255, 255, .18); }
 }
 
-/* ── Projects, as on Puru's: one piece of work at a time, centre stage, with the sidebar beside it ── */
+/* ── The sidebar in every view, as on Puru's, and Projects: one piece of work at a time, centre stage ── */
 :root { --side: 288px; }
 .side { display: none; }
 @media (min-width: 761px) {
   /* the work starts beside the panel and runs under it, so hiding the panel moves nothing */
-  body[data-showing="projects"] .track { padding-left: var(--side); }
-  body[data-showing="projects"] .dynbar { left: calc(50% + var(--side) / 2); }
-  body[data-showing="projects"].side-hidden .dynbar { left: 50%; }
-  body[data-showing="projects"] .side {
+  .track { padding-left: var(--side); }
+  .dynbar { left: calc(50% + var(--side) / 2); }
+  body.side-hidden .dynbar { left: 50%; }
+  .side {
     position: fixed; inset: var(--top) auto 0 0; z-index: 30; width: var(--side);
     display: flex; flex-direction: column; gap: 40px; padding: 32px 32px 32px 18px;
     overflow-y: auto; scrollbar-width: none; border-right: 1px solid var(--line-2);
@@ -1098,6 +1098,18 @@ button.card--slot.card--folder:hover .fold__front { transform: perspective(520px
 }
 .side__top { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; padding-top: 8px; }
 .side h1 { margin: 0; font: 300 30px/1.1 var(--font-sans); letter-spacing: -0.025em; text-wrap: balance; }
+.side__mid { display: flex; flex-direction: column; gap: 12px; }
+.side__mid p { margin: 0; font: 400 13px/1.55 var(--font-sans); color: var(--muted); }
+/* the legend is a guide: each kind lifts when you reach for it, and the rest of the story steps back */
+.side__mid .legend { gap: 4px; margin: 0 0 0 -8px; }
+.side__mid .legend button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--r-pill); color: var(--muted); transition: background .2s, color .2s; }
+.side__mid .legend button:hover, .side__mid .legend button:focus-visible { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+body[data-focus="note"] .track .card:not(.note-card),
+body[data-focus="work"] .track .card:not(.work-card):not(.card--folder),
+body[data-focus] .track .card--quote { opacity: .16; }
+body[data-focus=""] .track .card { opacity: 1; }
+body[data-focus="note"] .allday-bar, body[data-focus="work"] .allday-bar { transition: opacity .3s var(--ease); }
+body[data-focus="note"] .allday-bar { opacity: .16; }
 .marquee {
   overflow: hidden; color: var(--ink);
   -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);

@@ -472,7 +472,7 @@
     <div class="legend"><span>${icon.note}Notes</span><span>${FOLDERS ? icon.folder : icon.card}Work</span></div>
     <div class="trusted"><span class="trusted__label">Trusted by</span><div class="trusted__strip">${trustedRun}${trustedRun.replace('class="trusted__run"', 'class="trusted__run" aria-hidden="true"')}</div></div>`;
 
-  /* ── The sidebar in Projects, as on Puru's: the statement, the way in, and what backs it up ── */
+  /* ── The sidebar, as on Puru's: the statement, the way in, and what backs it up; in Stories, how to read it too ── */
   const LOGO_GAP = 28, LOGO_SPEED = 20; // px, px per second
   const TRUSTED = LOGOS.filter((l) => !l.avatarOnly);
   // a row of logos that runs in a loop; its length sets its time, so every row moves at the same speed
@@ -486,7 +486,13 @@
   }
   const statement = 'Design-led growth for Tech &amp; AI <em>companies</em>.';
   // the sidebar in two halves: the pitch up top with room to breathe, and everything that backs it up together at the foot
+  // in Stories the legend is a guide too: reach for Notes or Work and the rest of the story steps back
+  const sideMid = () => (view === 'projects' ? '' : `<div class="side__mid">
+      <p>Our story, by the day. Notes are how we got here. Work is what we've shipped.</p>
+      <div class="legend"><button data-focus="note">${icon.note}Notes</button><button data-focus="work">${FOLDERS ? icon.folder : icon.card}Work</button></div>
+    </div>`);
   const sideHTML = () => `<div class="side__top"><h1>${statement}</h1></div>
+    ${sideMid()}
     <div class="side__proof">
       ${SIDE_QUOTE ? `<div class="side__peek">${cardHTML(SIDE_QUOTE)}</div>` : ''}
       <div class="side__pocket">
@@ -509,10 +515,9 @@
     closeAll(true);
     document.body.dataset.showing = view;
     if (mq.matches) return renderAgenda();
-    side.innerHTML = view === 'projects' ? sideHTML() : '';
+    side.innerHTML = sideHTML();
     if (view === 'projects') { renderProjects(); placeCta(); return syncBar(); }
     track.innerHTML =
-      `<section class="col col--intro"><div class="col-head"></div><div class="intro">${introCopy}</div></section>` +
       columnsFor(view).map((c, i) => colHTML(c, i)).join('') +
       `<section class="col col--end"><div class="col-head"></div>${outroHTML()}</section>`;
     placeCta();
@@ -640,7 +645,7 @@
     if (view === 'projects') return; // the work runs by what leads, not by date, and the sheet opens over wherever you are
     const cols = $$('.col[data-date]', track);
     const col = cols.find((c) => c.dataset.end >= date) || cols[cols.length - 1];
-    if (col) timeline.scrollLeft = Math.max(0, col.offsetLeft - 40);
+    if (col) timeline.scrollLeft = Math.max(0, col.offsetLeft - SIDE_W() - 40);
   }
 
   timeline.addEventListener('wheel', (e) => {
@@ -729,7 +734,7 @@
     }, 160);
   }
   timeline.addEventListener('scroll', () => {
-    if (mq.matches || view !== 'projects') return;
+    if (mq.matches) return;
     const x = timeline.scrollLeft, dx = x - sideLast;
     if (x <= 8) { sideLast = x; return showSide(); }
     if (document.body.classList.contains('side-hidden')) settleSide();
@@ -738,9 +743,16 @@
     if (dx > 0) hideSide(); else showSide();
   }, { passive: true });
   document.addEventListener('pointermove', (e) => {
-    if (view === 'projects' && e.pointerType === 'mouse' && e.clientX <= 20 && e.clientY > 44 && document.body.classList.contains('side-hidden')) showSide();
+    if (e.pointerType === 'mouse' && e.clientX <= 20 && e.clientY > 44 && document.body.classList.contains('side-hidden')) showSide();
   });
-  side.addEventListener('pointerleave', () => { if (view === 'projects' && timeline.scrollLeft > 8 && !open) hideSide(); });
+  side.addEventListener('pointerleave', () => { if (timeline.scrollLeft > 8 && !open) hideSide(); });
+  // the legend's guide: only the notes, or only the work, while you reach for one
+  const focusOn = (k) => { document.body.dataset.focus = k || ''; };
+  side.addEventListener('pointerover', (e) => { const b = e.target.closest('[data-focus]'); if (b) focusOn(b.dataset.focus); });
+  side.addEventListener('pointerout', (e) => { if (e.target.closest('[data-focus]') && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-focus]'))) focusOn(''); });
+  side.addEventListener('focusin', (e) => { const b = e.target.closest('[data-focus]'); if (b) focusOn(b.dataset.focus); });
+  side.addEventListener('focusout', () => focusOn(''));
+  side.addEventListener('click', (e) => { const b = e.target.closest('[data-focus]'); if (b) focusOn(document.body.dataset.focus === b.dataset.focus ? '' : b.dataset.focus); });
   side.addEventListener('focusin', showSide);
 
   /* ── Zoom bar ─────────────────────────────────────── */
@@ -779,9 +791,9 @@
   ctaBar.classList.add('cta--bar');
   ctaIntro.classList.add('cta--intro');
   bar.append(Object.assign(document.createElement('span'), { className: 'dyn-div' }), ctaBar);
-  // the intro and the sidebar are drawn again with every view, so the button is put back each time
+  // the sidebar (or on phones the intro) is drawn again with every view, so the button is put back each time
   const placeCta = () => {
-    const at = view === 'projects' ? $(mq.matches ? '.ag-intro' : '.side__top') : $(mq.matches ? '.ag-intro' : '.intro');
+    const at = $(mq.matches ? '.ag-intro' : '.side__top');
     if (at) at.insertBefore(ctaIntro, $('.legend', at));
   };
 
