@@ -900,6 +900,8 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   .ag-cards .card--quote { font-size: 22px; min-height: 0; padding: 4px 0; text-align: center; justify-content: center; }
   .ag-cards .card--slot { min-height: 120px; }
   .ag-cards .card.has-photos { min-height: 210px; }
+  /* no hover on phones, so the film's poster sits inside its card instead of waiting past the edge */
+  .ag-cards .work-card .poster { position: relative; right: auto; top: auto; bottom: auto; width: 100%; aspect-ratio: 16 / 9; }
   .minimap, .dyn-seg + .dyn-div { display: none; }
   /* phones: three views, the filter and the button share the bar, so each keeps tight */
   .dynbar { gap: 0; padding: 3px; max-width: calc(100vw - 16px); }

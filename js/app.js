@@ -1033,6 +1033,20 @@
 
   /* ── Notes: lift out, blur the rest ───────────────── */
   let open = null; // { kind: 'note' | 'sheet', el, ... }
+  // opening something takes one step in the browser's history, so Back (or a phone's back swipe) closes it instead of
+  // leaving the site; going from one open thing straight to the next reuses that step
+  const here = () => location.pathname + location.search;
+  function stepIn(kind, hash = '') {
+    const was = history.state && history.state.open;
+    history[was === kind || (was && kind !== 'viewer') ? 'replaceState' : 'pushState']({ open: kind }, '', here() + hash);
+  }
+  // closing it any other way takes that step back out, so Back never has an empty step to go through
+  const stepOut = (kind) => { if (history.state && history.state.open === kind) history.back(); };
+  addEventListener('popstate', () => {
+    const now = history.state && history.state.open;
+    if (viewing && now !== 'viewer') closeViewer(false, true);
+    if (open && !now) closeAll(false, true);
+  });
 
   function ownerOf(ev) {
     if (ev.type === 'person') { const P = personOf(ev); return [{ mono: P.mono }, P.name]; }
@@ -1188,6 +1202,7 @@
     focusEl.hidden = false;
     requestAnimationFrame(() => focusEl.classList.add('is-in'));
     open = { kind: 'note', ev, el, cleanup: null };
+    stepIn('note');
     setOwner(...ownerOf(ev), tint);
     markVisited(ev.id);
 
@@ -1426,11 +1441,13 @@
     const { list } = viewing;
     viewing.i = (i + list.length) % list.length;
     const src = list[viewing.i];
+    // fast presses overlap: only the newest step may show, so an image still loading from an earlier press can't land on top
+    const step = (viewing.step = (viewing.step || 0) + 1);
     const piece = viewing.items && viewing.items[viewing.i];
     const clip = piece && piece.kind === 'video';
     const probe = new Image();
     if (!clip) { probe.src = src; await probe.decode().catch(() => {}); }
-    if (!viewing) return;
+    if (!viewing || step !== viewing.step) return;
     const [nw, nh] = clip ? SIZES[piece.poster] || [16, 9] : [probe.naturalWidth || 4, probe.naturalHeight || 3];
     const S = stageBox(), pad = mq.matches ? 16 : 48, capH = piece ? (mq.matches ? 96 : 72) : 0;
     const k = Math.min((S.width - pad * 2) / nw, (S.height - pad * 2 - capH) / nh, 1.6);
@@ -1476,6 +1493,7 @@
     viewer.classList.add('is-full');
     viewer.hidden = false;
     requestAnimationFrame(() => viewer.classList.add('is-in'));
+    stepIn('viewer');
     showPic(Math.max(0, list.indexOf(src)), fromEl);
   }
   // phones: swipe left for the next image, right for the previous; a tap still closes
@@ -1495,11 +1513,13 @@
     viewer.classList.add('is-full');
     viewer.hidden = false;
     requestAnimationFrame(() => viewer.classList.add('is-in'));
+    stepIn('viewer');
     showPic(i, fromEl);
   }
-  function closeViewer(instant) {
+  function closeViewer(instant, fromHistory) {
     if (!viewing) return;
     viewing = null;
+    if (!fromHistory) stepOut('viewer');
     $('.viewer__vid', viewer).pause();
     viewer.classList.remove('is-in');
     const hide = () => { if (!viewing) viewer.hidden = true; };
@@ -1512,9 +1532,9 @@
     const card = srcEl || $(`.card[data-id="${ev.id}"]`, mq.matches ? agenda : track);
     showSheet(projectSheetHTML(ev), ev.id);
     open = { kind: 'sheet', id: ev.id, el: card };
+    stepIn('sheet', `#work/${ev.id}`);
     setOwner({ mono: (ev.client || '37')[0] }, ev.client || 'By 37degree');
     markVisited(ev.id);
-    history.replaceState(null, '', `${location.pathname}${location.search}#work/${ev.id}`);
   }
 
   function openCase(id, section, srcEl, opts = {}) {
@@ -1524,9 +1544,9 @@
     const caseCard = $(`.card--case[data-case="${id}"]`, mq.matches ? agenda : track);
     showSheet(sheetHTML(C), id);
     open = { kind: 'sheet', id, el: srcEl || caseCard };
+    stepIn('sheet', `#work/${id}`);
     setOwner(C.logo ? { logo: C.logo } : { mono: C.client[0] }, C.short);
     markVisited(caseCard && caseCard.dataset.id, srcEl && srcEl.dataset.id);
-    history.replaceState(null, '', `${location.pathname}${location.search}#work/${id}`);
     if (section) {
       setTimeout(() => {
         const sec = $(`#sec-${section}`, sheet);
@@ -1594,7 +1614,7 @@
   });
 
   function closeSheet(o, instant) {
-    closeViewer(true);
+    closeViewer(true, true); // the history step is the sheet's to give back
     sheetScroll.set(o.id, sheet.scrollTop);
     // the whole sheet drops straight down from where you are
     sheet.classList.add('is-leaving');
@@ -1608,16 +1628,20 @@
       sheet.classList.remove('is-in', 'is-leaving');
     };
     instant ? hide() : setTimeout(hide, 520);
-    history.replaceState(null, '', location.pathname + location.search);
     !instant && o.el && o.el.focus({ preventScroll: true });
   }
 
-  function closeAll(instant) {
+  // instant: something else opens right after, in the same step; fromHistory: Back already took the step
+  function closeAll(instant, fromHistory) {
     if (!open) return;
     const o = open;
     open = null;
     clearOwner();
     o.kind === 'note' ? closeNote(o, instant) : closeSheet(o, instant);
+    if (!instant && !fromHistory) {
+      if (history.state && history.state.open) stepOut(history.state.open);
+      else if (location.hash) history.replaceState(null, '', here()); // opened before this page knew about steps
+    }
   }
 
   /* ── Events ───────────────────────────────────────── */
@@ -1693,7 +1717,7 @@
     const go = viewing && t.closest('.viewer__go');
     if (go) {
       const target = BY_ID[go.dataset.go];
-      closeViewer(true);
+      closeViewer(true, true); // the work opens in the viewer's step
       return target.type === 'case' ? openCase(target.case) : openProject(target);
     }
     if (viewing && t.closest('.viewer__cap')) return;
@@ -1765,6 +1789,7 @@
   function fromHash() {
     const m = location.hash.match(/^#work\/([\w-]+)/);
     if (!m || (open && open.id === m[1])) return;
+    if (!(history.state && history.state.open)) history.replaceState(null, '', here());
     if (CASES[m[1]]) {
       if (!mq.matches) scrollToDate(CASES[m[1]].start, `[data-case="${m[1]}"]`);
       return setTimeout(() => openCase(m[1]), 250);
