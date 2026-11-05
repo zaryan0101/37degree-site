@@ -16,6 +16,8 @@ const plain = (s) => (s ? s.trim().replace(/\*([^*\n]+)\*/g, '$1') : '');
 // only plain web links and image paths inside assets/
 const safeHref = (u) => (u && /^https?:\/\/[^\s"'<>]+$/i.test(u.trim()) ? u.trim() : undefined);
 const safeImg = (p) => typeof p === 'string' && /^assets\/[\w\-./]+\.(jpe?g|png|webp|gif|avif)$/i.test(p) && !p.includes('..');
+const safeClip = (p) => typeof p === 'string' && /^assets\/[\w\-./]+\.(mp4|webm|mov)$/i.test(p) && !p.includes('..');
+const words = (a) => (Array.isArray(a) ? a.map((x) => String(x).trim()).filter(Boolean) : []);
 // write-ups come from the rich-text editor; drop anything that could run
 const cleanHTML = (h) => (h && h.trim()
   ? h.replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, '').replace(/\son\w+="[^"]*"/gi, '').replace(/javascript:/gi, '')
@@ -29,6 +31,9 @@ function toEvent(r, byPath) {
   const summary = rich(r.summary);
   const photos = (r.photos || []).filter(safeImg);
   const pics = photos.length ? photos : undefined;
+  const clips = (r.clips || []).filter(safeClip);
+  // what the sheet shows beyond the card: clips, industry and stack
+  const more = { clips: clips.length ? clips : undefined, industry: (r.industry || '').trim() || undefined, stack: words(r.stack).length ? words(r.stack) : undefined };
   const parent = r.part_of && byPath.get(r.part_of);
   const client = (r.client || '').trim();
   const live = safeHref(r.live);
@@ -40,7 +45,10 @@ function toEvent(r, byPath) {
     color: r.color ? r.color.toLowerCase() : undefined,
     // the project a card belongs to: groups it under that company in the Projects view
     parent: parent ? idOf(parent.file) : undefined,
+    // stand-in facts never reach the site, even if one is marked in the CMS
+    facts: (r.facts || []).filter((f) => f.label && f.value && !f.dummy).map((f) => ({ label: rich(f.label), value: rich(f.value) })),
   };
+  if (!base.facts.length) delete base.facts;
   switch (r.card) {
     case 'Quote': return { ...base, type: 'quote', title };
     case 'Note': return { ...base, type: 'note', title, detail: summary, photos: pics };
@@ -59,10 +67,10 @@ function toEvent(r, byPath) {
         : { ...base, type: 'milestone', title, metric: r.metric || undefined, detail: summary };
     case 'Project':
       if (r.case_study) return { ...base, type: 'case', case: r.case_study, services: r.services || undefined, end: r.end || undefined };
-      return { ...base, type: 'project', title, client, summary, services: r.services || [], photos: pics, live, end: r.end || undefined, body: cleanHTML(r.body) };
+      return { ...base, type: 'project', title, client, summary, services: r.services || [], photos: pics, live, end: r.end || undefined, body: cleanHTML(r.body), ...more };
     case 'Moment':
       if (r.case_study) return { ...base, type: 'step', case: r.case_study, section: r.case_section || undefined, title, img: photos[0] };
-      return { ...base, type: 'moment', title, client: client || parent?.client, summary, services: r.services || [], photos: pics, live, body: cleanHTML(r.body) };
+      return { ...base, type: 'moment', title, client: client || parent?.client, summary, services: r.services || [], photos: pics, live, body: cleanHTML(r.body), ...more };
   }
   console.warn(`  skipped "${r.name}": unknown Card "${r.card}"`);
   return null;

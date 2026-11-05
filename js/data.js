@@ -185,16 +185,27 @@ const TESTIMONIALS = {
 
 // one-colour marks (black on transparent, trimmed), each taken from the company's own site where it has one.
 // `ar` is width ÷ height and `d` how much of that box is ink: together they size the logos so they look equally big.
-// `mk` is how wide the symbol at the start of the wordmark is (÷ height), so a folder's avatar can show just that.
+// `mk` is how wide the symbol at the start of the wordmark is (÷ height), so a folder's avatar can show just that;
+// `match` is the start of the client's name, when their first word alone would match someone else too;
+// `avatarOnly` keeps a badge too detailed for the Trusted by strip out of it.
 const LOGOS = [
   { name: 'Deccan AI', src: 'assets/img/logos/deccan.png', ar: 4.362, d: 0.196, mk: 0.769 },
   { name: 'Sidecar', src: 'assets/img/logos/sidecar.png', ar: 3.77, d: 0.229, mk: 0.969 },
   { name: 'Valley', src: 'assets/img/logos/valley.png', ar: 3.41, d: 0.232 },
   { name: 'Induced', src: 'assets/img/logos/induced.png', ar: 6.179, d: 0.373 },
-  { name: 'Solana', src: 'assets/img/logos/solana.png', ar: 6.717, d: 0.407 },
+  { name: 'Solana', match: 'solana foundation', src: 'assets/img/logos/solana.png', ar: 6.717, d: 0.407 },
   { name: 'Superteam', src: 'assets/img/logos/superteam.png', ar: 7.505, d: 0.38, mk: 1.106 },
   { name: 'Goatfish', src: 'assets/img/logos/goatfish.png', ar: 0.891, d: 0.29, mk: 0.891 },
-  { name: 'Solana Economic Zone', src: 'assets/img/logos/sez.png', ar: 0.876, d: 0.669 },
+  { name: 'Solana Economic Zone', match: 'solana economic', src: 'assets/img/logos/sez.png', ar: 0.876, d: 0.669, mk: 0.876 },
+  { name: 'Omnipair', src: 'assets/img/logos/omnipair.png', ar: 5.313, d: 0.305, mk: 0.979 },
+  { name: 'Almanac', src: 'assets/img/logos/almanac.png', ar: 1, d: 0.467, mk: 1 },
+  { name: 'lab0.ai', src: 'assets/img/logos/lab0.png', ar: 1.115, d: 0.193, mk: 1.115 },
+  { name: 'DevX Labs', src: 'assets/img/logos/devx.png', ar: 6.323, d: 0.383 },
+  { name: 'DemandFarm', src: 'assets/img/logos/demandfarm.png', ar: 4.76, d: 0.185, mk: 0.688 },
+  { name: 'Kue', src: 'assets/img/logos/kue.png', ar: 1.219, d: 0.919, mk: 1.219 },
+  { name: 'Aria Music', src: 'assets/img/logos/aria.png', ar: 1.021, d: 0.377, mk: 1.021 },
+  { name: 'ElMuse', src: 'assets/img/logos/elmuse.png', ar: 4.771, d: 0.311 },
+  { name: 'Solana Ecosystem Call', match: 'solana ecosystem', src: 'assets/img/logos/sec.png', ar: 1, d: 0.592, mk: 1, avatarOnly: true },
 ];
 
 const SNIPPETS = ['assets/img/snip-1.jpg', 'assets/img/snip-2.jpg', 'assets/img/snip-3.jpg', 'assets/img/snip-4.jpg'];
