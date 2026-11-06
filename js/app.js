@@ -472,44 +472,81 @@
     return out;
   })();
 
-  // a pin board: the work scattered down columns with room around it, each piece a little askew and held up by tape or a pin,
-  // some as polaroids with the client written under them, and now and then a sticky note from Stories. Every column loops
-  // top to bottom on its own and the set repeats side to side, so there's no edge anywhere
+  // the board, three ways, toggled beside Exploration (?board=): every piece as a polaroid, each project as a little stack of
+  // prints, or each project as one of the site's folders. Every column loops top to bottom on its own and the set repeats
+  // side to side, so there's no edge anywhere
   const board = $('.board');
-  const NOTES = ALL.filter((e) => e.type === 'testimonial' || (e.type === 'note' && e.highlight && e.photos));
-  // phones have too narrow a column for a note's words, so there the board is the work alone
-  const itemsFor = (phone) => PIECES.flatMap((p, i) => {
-    const note = !phone && i % 11 === 6 && NOTES[Math.floor(i / 11) % NOTES.length];
-    return note ? [{ i }, { note }] : [{ i }];
-  });
+  const BOARDS = [['polaroids', 'Polaroids'], ['stacks', 'Stacks'], ['folders', 'Folders']];
+  let boardMode = BOARDS.find(([k]) => k === new URLSearchParams(location.search).get('board')) ? new URLSearchParams(location.search).get('board') : 'polaroids';
+  // a project's pieces together, in the board's mixed order, for the stacks and the folders
+  const GROUPS = (() => {
+    const by = new Map();
+    PIECES.forEach((p, i) => { if (!by.has(p.ev)) by.set(p.ev, []); by.get(p.ev).push(i); });
+    return [...by.values()];
+  })();
+  const itemsFor = () => (boardMode === 'polaroids' ? PIECES.map((p, i) => ({ i })) : GROUPS.map((g) => ({ g })));
   // the same scatter for everyone: a small seeded random for each slot on the board
   const jitter = (n, k) => { const x = Math.sin(n * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
   const PUSH = ['brand', 'yellow', 'blue', 'pink', 'green'];
   let cam = { x: -56, y: -28 }, cols = [], boardW = 1, built = '', viewW = innerWidth; // start a little in, so the first column has air on its left
+  const still = (p) => (p.kind === 'video' ? p.poster : p.src); // what a print of a clip shows
   function itemHTML(it, n, cw) {
     const r = (jitter(n, 1) - 0.5) * 6.5; // −3.25° to 3.25°
     const hold = jitter(n, 2) < 0.58 ? `<i class="pin__tape" style="--tr:${((jitter(n, 3) - 0.5) * 14).toFixed(1)}deg"></i>`
       : `<i class="pin__push pin__push--${PUSH[Math.floor(jitter(n, 4) * PUSH.length)]}"></i>`;
-    if (it.note) {
-      const w = Math.round(cw * 0.86), tall = it.note.photos ? 1.32 : 0.95; // a note with prints needs room for them
-      return { h: w * tall, html: `<div class="pin pin--note" style="width:${w}px;--r:${r.toFixed(2)}deg;--tall:${tall}">${cardHTML(it.note)}<i class="pin__push pin__push--${PUSH[n % PUSH.length]}"></i></div>` };
+    if (it.g) {
+      const first = PIECES[it.g[0]], label = `${first.client}: ${strip(first.title)}`;
+      // folders: the project's own folder, as on Stories, its first screens peeking out
+      if (boardMode === 'folders') {
+        const w = Math.min(280, cw);
+        const papers = it.g.map((k) => still(PIECES[k])).filter(Boolean).slice(0, 3);
+        return { h: w / 1.06 + 74, html: `<div class="pin pin--folder" data-group="${n}" style="width:${w}px;--r:${(r * 0.4).toFixed(2)}deg">
+          <button class="card card--folder" aria-label="${label}, ${it.g.length} piece${it.g.length > 1 ? 's' : ''}">${folderHTML({ papers, name: first.client, title: first.title, sub: `${first.client} · ${it.g.length} piece${it.g.length > 1 ? 's' : ''}` })}</button></div>` };
+      }
+      // stacks: up to three prints in a pile, the newest on top; reach for it and they fan out
+      const w = Math.round(cw * (0.8 + jitter(n, 6) * 0.2));
+      const prints = it.g.slice(0, 3).map((k) => still(PIECES[k])).filter(Boolean).reverse();
+      return { h: w * 0.78 + 56, html: `<div class="pin pin--stack" data-group="${n}" style="width:${w}px;--r:${r.toFixed(2)}deg">
+        <button class="pstack" aria-label="${label}, ${it.g.length} piece${it.g.length > 1 ? 's' : ''}">${prints.map((src) => `<img src="${src}" alt="" loading="lazy" decoding="async">`).join('')}
+          ${it.g.length > 1 ? `<span class="pstack__n">${it.g.length}</span>` : ''}</button>
+        <span class="pin__label"><b>${first.client}</b><i>${first.title}</i></span>
+        <i class="pin__push pin__push--${PUSH[n % PUSH.length]}"></i></div>` };
     }
+    // polaroids: every piece in a white frame with its client written under it
     const p = PIECES[it.i];
-    const polaroid = p.kind === 'img' && jitter(n, 5) < 0.26;
     const w = Math.round(cw * (0.74 + jitter(n, 6) * 0.26));
-    const mw = polaroid ? w - 20 : w;
     const media = p.kind === 'video'
       ? `<video src="${p.src}"${p.poster ? ` poster="${p.poster}"` : ''} muted loop playsinline preload="none"></video>`
       : `<img src="${p.src}" alt="" loading="lazy" decoding="async">`;
     return {
-      h: mw / p.ar + (polaroid ? 52 : 0),
-      html: `<div class="pin${polaroid ? ' pin--polaroid' : ''}" data-pin="${it.i}" style="width:${w}px;--r:${r.toFixed(2)}deg">
+      h: (w - 20) / p.ar + 52,
+      html: `<div class="pin pin--polaroid" data-pin="${it.i}" style="width:${w}px;--r:${r.toFixed(2)}deg">
         <button class="pin__m" style="aspect-ratio:${p.ar.toFixed(3)}" aria-label="${p.client}: ${strip(p.title)}">${media}
           <span class="pin__tag">${clientAvatar(p.client)}<span class="pin__who"><b>${p.client}</b><i>${p.title}</i></span></span></button>
-        ${polaroid ? `<span class="pin__note">${p.client}</span>` : ''}${hold}
+        <span class="pin__note">${p.client}</span>${hold}
       </div>`,
     };
   }
+  // the toggle beside Exploration: switching redraws the board where you are
+  const modesEl = Object.assign(document.createElement('div'), { className: 'board-modes', hidden: true });
+  modesEl.setAttribute('role', 'radiogroup');
+  modesEl.setAttribute('aria-label', 'Show the board as');
+  modesEl.innerHTML = BOARDS.map(([k, label]) => `<button role="radio" data-board="${k}">${label}</button>`).join('');
+  const syncModes = () => {
+    modesEl.hidden = view !== 'explore';
+    $$('[data-board]', modesEl).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.board === boardMode)));
+  };
+  modesEl.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-board]');
+    if (!b || b.dataset.board === boardMode) return;
+    boardMode = b.dataset.board;
+    const q = new URLSearchParams(location.search);
+    if (boardMode === 'polaroids') q.delete('board'); else q.set('board', boardMode);
+    history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
+    syncModes();
+    built = '';
+    buildBoard();
+  });
   const pinClips = new IntersectionObserver((entries) => entries.forEach(({ target, isIntersecting }) => {
     if (isIntersecting && !reduced.matches) target.play().catch(() => {}); else target.pause();
   }), { root: board, threshold: 0.25 });
@@ -517,13 +554,13 @@
     const vw = board.clientWidth || innerWidth, vh = board.clientHeight || innerHeight;
     viewW = vw; // measured here once, so moving the board never has to read its size
     const cw = mq.matches ? 168 : 290, gapX = mq.matches ? 28 : 72, step = cw + gapX;
-    const key = `${cw}:${vw}:${vh}`;
+    const key = `${boardMode}:${cw}:${vw}:${vh}`;
     if (key === built) return applyCam();
     built = key;
     // enough columns that one column never shows twice across the screen
     const n = Math.max(mq.matches ? 4 : 8, Math.ceil((vw + step) / step) + 1);
     const heights = Array(n).fill(0), runs = [...Array(n)].map(() => []);
-    itemsFor(mq.matches).forEach((it, k) => {
+    itemsFor().forEach((it, k) => {
       const c = heights.indexOf(Math.min(...heights));
       const { h, html } = itemHTML(it, k, cw);
       // uneven air above each piece, and a nudge off the column's centre
@@ -866,8 +903,9 @@
   const ind = $('.dyn-ind');
   function syncBar() {
     $$('[data-view]', seg).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.view === view)));
-    // the filter shows or hides first: it sits between the buttons, so it moves where the highlight has to go
+    // the filter and the board's toggle show or hide first: they sit between the buttons, so they move where the highlight goes
     syncFilter();
+    syncModes();
     const on = $(`[data-view="${view}"]`, seg);
     if (on && on.offsetWidth) { ind.style.left = `${on.offsetLeft}px`; ind.style.width = `${on.offsetWidth}px`; }
   }
@@ -910,6 +948,7 @@
   const offered = FILTERS.filter((f) => filterCount(f.key));
   // it sits right after the Projects button, between it and Exploration
   $('[data-view="projects"]', seg).after(filterEl);
+  $('[data-view="explore"]', seg).after(modesEl);
   filterEl.innerHTML =
     `<button class="filter__btn" aria-expanded="false">${FILTER_ICON.lines}<span class="filter__cur"></span><span class="filter__caret">${FILTER_ICON.caret}</span></button>` +
     `<div class="filter__opts" role="radiogroup" aria-label="Show">` +
@@ -1435,8 +1474,11 @@
     showPic(viewing.i + (dx < 0 ? 1 : -1), null, dx < 0 ? 1 : -1);
   });
   // a piece from the board opens with every piece on it to browse
-  function openPiece(i, fromEl) {
-    viewing = { list: PIECES.map((p) => p.src), items: PIECES, i: 0, shown: false };
+  // from a stack or a folder, only that project's pieces are there to browse
+  function openPiece(i, fromEl, only) {
+    const items = only ? only.map((k) => PIECES[k]) : PIECES;
+    if (only) i = 0;
+    viewing = { list: items.map((p) => p.src), items, i: 0, shown: false };
     viewer.style.width = `${innerWidth}px`;
     viewer.classList.add('is-full');
     viewer.hidden = false;
@@ -1650,6 +1692,8 @@
     if (viewing && t.closest('.viewer')) return closeViewer();
     const pin = t.closest('.pin[data-pin]');
     if (pin) return panMoved ? undefined : openPiece(Number(pin.dataset.pin), $('img, video', pin));
+    const group = t.closest('.pin[data-group]');
+    if (group) return panMoved ? undefined : openPiece(0, $('img', group), GROUPS[Number(group.dataset.group)]);
     const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img');
     if (pic) return openViewer(pic.getAttribute('src'), pic);
     // "Work with us" opens the new-event invite; the mailto stays as the fallback
