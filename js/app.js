@@ -976,8 +976,8 @@
   const ctaBar = $('.cta');
   ctaBar.innerHTML = `<span class="cta__in">Work with us<i class="cta__go">${icon.arrow}</i></span>`;
   ctaBar.classList.add('cta--bar');
-  // in the sidebar (and the intro on phones) it's a plain pill right under the title, as on Puru's
-  const ctaIntro = Object.assign(document.createElement('a'), { className: 'btn side__cta', href: MAIL, innerHTML: `Work with us ${icon.arrow}` });
+  // in the sidebar (and the intro on phones) it's the same pill as the bar's, a step larger, right under the title
+  const ctaIntro = Object.assign(document.createElement('a'), { className: 'cta cta--side', href: MAIL, innerHTML: ctaBar.innerHTML });
   // the bar's button only steps in once the sidebar, with its own, has slid away
   bar.append(Object.assign(document.createElement('span'), { className: 'dyn-div dyn-div--cta' }), ctaBar);
   // the sidebar (or on phones the intro) is drawn again with every view, so the button is put back each time, under the title
@@ -1351,7 +1351,7 @@
         ${nextHTML(next)}
         <div class="pp-cta">
           <div><p class="pp-cta__t">Have something to launch?</p><p class="pp-cta__s">Pick a week and tell us what you’re building.</p></div>
-          <a class="pp-btn" href="${MAIL}">Work with us ${icon.arrow}</a>
+          <a class="pp-btn" href="${MAIL}">Work with us<i class="cta__go">${icon.arrow}</i></a>
         </div>
       </div>
       <div class="pp-sign" aria-label="Thanks, Puru and Haneef">
@@ -1743,13 +1743,13 @@
     const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img');
     if (pic) return openViewer(pic.getAttribute('src'), pic);
     // "Work with us" opens the new-event invite; the mailto stays as the fallback
-    const cta = t.closest('.cta, .side__cta, .pp-btn');
+    const cta = t.closest('.cta, .pp-btn');
     if (cta) {
       e.preventDefault();
       const slot = ALL.find((x) => x.type === 'slot');
       closeAll(true);
       // it lifts off the button you pressed, or from inside a sheet, off the one in the bar
-      return openNote(slot, cta.matches('.cta, .side__cta') ? cta : mq.matches || document.body.classList.contains('side-hidden') ? ctaBar : ctaIntro);
+      return openNote(slot, cta.matches('.cta') ? cta : mq.matches || document.body.classList.contains('side-hidden') ? ctaBar : ctaIntro);
     }
     const v = t.closest('[data-view]');
     if (v) return setView(v.dataset.view);
