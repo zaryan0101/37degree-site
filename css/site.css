@@ -170,14 +170,11 @@ em { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
 .filter--nav .filter__opts button { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; border-radius: var(--r-inner); color: var(--ink); text-align: left; }
 .filter--nav .filter__opts button:hover, .filter--nav .filter__opts button[aria-checked="true"] { background: var(--paper); }
 
-/* in the top bar, lined up with the left edge of the work (the column's 72px in from the sidebar), its list dropping down
-   over it; when the sidebar slides away it follows, to sit beside the name */
-.filter--nav { position: absolute; top: 50%; left: calc(var(--side) + 72px); translate: 0 -50%; margin: 0; transition: left .4s var(--ease); }
-body.side-hidden .filter--nav { left: 170px; }
+/* in the top bar, on the right beside the light/dark switch (the same pill), its list hanging down from the right */
+.filter--nav { margin: 0 8px 0 auto; }
 .filter--nav .filter__btn { height: 32px; padding: 0 12px; box-shadow: none; }
-.filter--nav .filter__opts { top: calc(100% + 8px); left: 0; translate: 0 -6px; transform-origin: top left; }
+.filter--nav .filter__opts { top: calc(100% + 8px); right: 0; translate: 0 -6px; transform-origin: top right; }
 .filter--nav.is-open .filter__opts { translate: 0; }
-@media (prefers-reduced-motion: reduce) { .filter--nav { transition: none; } }
 
 /* ── Timeline ───────────────────────────────────────── */
 .stage { position: fixed; inset: var(--top) 0 0 0; }
@@ -234,8 +231,6 @@ button.card:active { transform: scale(.95); }
 .card.is-lifted { opacity: 0; }
 .card__title { font: 500 15px/1.4 var(--font-sans); letter-spacing: -0.01em; transition: opacity .3s; }
 .card__date { font: 500 11px/1 var(--font-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
-.card.is-visited .card__title { opacity: .5; }
-.card.is-visited:hover .card__title { opacity: 1; }
 
 /* pastel pairs: a soft background with dark text of the same hue */
 .tint-yellow { --bg: #FEF9C3; --fg: #854D0E; }
@@ -451,15 +446,23 @@ body.draft .is-tbc { outline: 1.5px dashed var(--brand); outline-offset: 2px; }
 .dynbar.is-owner .dyn-owner { display: inline-flex; animation: pop .35s var(--spring); }
 @keyframes pop { from { opacity: 0; transform: scale(.85); } }
 
-/* light / dark switch */
-.theme-btn { width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--r-pill); color: var(--ink); transition: background .2s; }
-.theme-btn:hover { background: var(--line-2); }
-.theme-btn .sun { display: none; }
-:root[data-theme="dark"] .theme-btn .sun { display: block; }
-:root[data-theme="dark"] .theme-btn .moon { display: none; }
+/* light / dark switch: the filter's pill, with both modes in it and the one you're in marked */
+.theme-btn {
+  display: inline-flex; align-items: center; gap: 2px; flex: none; margin-left: auto;
+  height: 32px; padding: 0 3px; border-radius: var(--r-pill);
+  background: var(--paper-2); border: 1px solid var(--line-2); color: var(--muted);
+  transition: border-color .2s;
+}
+.filter:not([hidden]) + .theme-btn { margin-left: 0; }
+.theme-btn:hover { border-color: color-mix(in srgb, var(--ink) 25%, transparent); }
+.theme-btn:active { transform: scale(.97); }
+.theme-btn svg { box-sizing: content-box; width: 14px; height: 14px; padding: 5px; border-radius: var(--r-pill); transition: background .25s, color .25s; }
+.theme-btn .sun { order: -1; }
+.theme-btn .sun, :root[data-theme="dark"] .theme-btn .moon { background: var(--ink); color: var(--paper-2); }
+:root[data-theme="dark"] .theme-btn .sun { background: none; color: inherit; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-btn .sun { display: block; }
-  :root:not([data-theme="light"]) .theme-btn .moon { display: none; }
+  :root:not([data-theme="light"]) .theme-btn .moon { background: var(--ink); color: var(--paper-2); }
+  :root:not([data-theme="light"]) .theme-btn .sun { background: none; color: inherit; }
 }
 
 /* ── Note: lifts out of the grid, everything else blurs ── */
@@ -815,9 +818,6 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   .dynbar .dyn-div--cta { margin: 0 3px; }
   .cta--bar .cta__in { gap: 6px; padding: 0 4px 0 10px; font-size: 12.5px; }
   .cta--bar .cta__go { width: 20px; height: 20px; }
-  /* phones: no sidebar, so it sits beside the light/dark switch, its list hanging from the right */
-  .filter--nav { position: relative; top: auto; left: auto; translate: none; margin: 0 8px 0 auto; }
-  .filter--nav .filter__opts { left: auto; right: 0; transform-origin: top right; }
   /* phones: a little less height in the strip */
   :root { --top: 60px; }
   .mark { gap: 8px; font-size: 17px; }
@@ -994,11 +994,8 @@ button.card--slot.card--folder:hover .fold__front { transform: perspective(520px
 }
 .side__top { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; padding-top: 8px; }
 .side h1 { margin: 0; font: 300 30px/1.1 var(--font-sans); letter-spacing: -0.025em; text-wrap: balance; }
-/* the sidebar's: the bar's pill, without the capsule around it, a step larger */
+/* the sidebar's: the bar's pill exactly, without the capsule around it */
 .cta--side { align-self: flex-start; padding: 0; background: none; border: 0; box-shadow: none; }
-.cta--side .cta__in { height: 36px; padding: 0 5px 0 16px; gap: 10px; font-size: 13.5px; }
-.cta--side .cta__go { width: 26px; height: 26px; }
-.cta--side .cta__go svg { width: 13px; height: 13px; }
 .side__mid { display: flex; flex-direction: column; gap: 12px; }
 .side__mid p { margin: 0; font: 400 14px/1.55 var(--font-sans); color: var(--muted); }
 /* the legend is a guide: each kind lifts when you reach for it, and the rest of the story steps back */
@@ -1033,7 +1030,8 @@ body[data-focus="note"] .allday-bar { opacity: .16; }
 
 :root {
   --stage-h: calc(100vh - var(--top) - 92px);
-  --slide-w: min(calc(var(--stage-h) * .68 * 1.6), calc(100vw - var(--side) - 180px));
+  /* 30% wider than the 16:10 frame the height allows, and as tall: the frame itself goes wider */
+  --slide-w: min(calc(var(--stage-h) * .68 * 1.6 * 1.3), calc(100vw - var(--side) - 120px));
 }
 /* the ruled lines of Stories, with the client where the date would be, lined up with the left edge of the work */
 .col--wall { --slide-pad: 72px; flex: 0 0 auto; }
@@ -1043,6 +1041,7 @@ body[data-focus="note"] .allday-bar { opacity: .16; }
 .col--wall .col-head .fold__mk, .wk__who .fold__mk { height: 12px; width: calc(12px * var(--mk)); }
 .slide { display: flex; align-items: center; gap: 56px; height: calc(var(--stage-h) - var(--head)); padding: 0 72px 0 var(--slide-pad, 72px); }
 .slide > .wk { flex: 0 0 var(--slide-w); width: var(--slide-w); }
+.slide .wk__m { aspect-ratio: 2.08; }
 body[data-showing="projects"] .col--end { flex: 0 0 auto; margin-right: calc((100vw - 504px) / 2); }
 body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 100vw) / 2); }
 /* sticky notes from Stories, set down in the white space beside the work */
@@ -1145,7 +1144,6 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
 /* ── Exploration: design references, the images alone, on a dotted table that never ends ── */
 .board {
   --dot: color-mix(in srgb, var(--ink) 15%, transparent);
-  --room: transparent;
   position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; user-select: none; outline: none;
   background: radial-gradient(circle, var(--dot) 1px, transparent 1.5px) 0 0 / 26px 26px, var(--paper);
 }
@@ -1153,29 +1151,15 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
 .board.is-panning { cursor: grabbing; }
 .board.is-panning .ex { pointer-events: none; }
 body[data-showing="explore"] .timeline, body[data-showing="explore"] .agenda, body[data-showing="explore"] .side { display: none; }
-/* in the spectrum the room takes on, faintly, the colour of what's in the middle */
-.board[data-mode="spectrum"]::before { content: ''; position: absolute; inset: 0; background: radial-gradient(60% 70% at 50% 50%, color-mix(in srgb, var(--room) 22%, transparent), transparent 75%); transition: background 1.2s var(--ease); pointer-events: none; }
 .board__layer { position: absolute; inset: 0; }
 /* an image: nothing around it but a soft corner and a soft shadow */
 .ex { position: absolute; top: 0; left: 0; display: block; padding: 0; transform-origin: 0 0; border-radius: 10px; overflow: hidden; background: color-mix(in srgb, var(--ink) 6%, var(--paper)); box-shadow: 0 1px 2px rgba(18, 18, 18, .08), 0 16px 40px -22px rgba(18, 18, 18, .45); cursor: zoom-in; }
 .ex img { display: block; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; transition: transform .6s var(--ease); }
 .ex:hover img { transform: scale(1.03); }
-/* deal: each card lands on the table, then shrinks back and drifts out as the next one comes */
-.board[data-mode="deal"] { cursor: pointer; }
-.ex--card {
-  transform: translate3d(var(--x), var(--y), 0) rotate(var(--r)) scale(var(--s));
-  transform-origin: 50% 50%;
-  transition: transform .8s var(--spring), opacity .6s, filter .6s;
-  animation: deal-in .7s var(--spring) both;
-  box-shadow: 0 2px 6px rgba(18, 18, 18, .12), 0 30px 70px -30px rgba(18, 18, 18, .6);
-}
-.ex--card.is-old { cursor: pointer; filter: saturate(.85); }
-.ex--card.is-gone { opacity: 0; }
-@keyframes deal-in { from { transform: translate3d(var(--x), calc(var(--y) + 70vh), 0) rotate(calc(var(--r) * -3)) scale(.9); } }
-@media (prefers-reduced-motion: reduce) { .ex--card { transition: none; animation: none; } .ex img { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ex img { transition: none; } }
 
 /* the bar on the board: the views and Work with us, since no sidebar holds it here */
-body[data-showing="explore"] .minimap, body[data-showing="explore"] .dyn-step { display: none !important; }
+body[data-showing="explore"] .minimap, body[data-showing="explore"] .dyn-step, body[data-showing="explore"] .dyn-seg + .dyn-div { display: none !important; }
 @media (min-width: 761px) {
   body[data-showing="explore"] .dynbar { left: 50%; }
   body[data-showing="explore"] .dynbar .cta--bar, body[data-showing="explore"] .dynbar .dyn-div--cta { max-width: 220px; margin-left: 0; opacity: 1; pointer-events: auto; }
@@ -1206,16 +1190,5 @@ body[data-showing="explore"] .minimap, body[data-showing="explore"] .dyn-step { 
   .viewer__go { width: 100%; justify-content: center; }
 }
 
-/* ── The toggle beside Exploration ── */
-.board-modes { display: flex; align-items: center; gap: 2px; margin: 0 2px 0 4px; padding: 3px; border-radius: var(--r-pill); background: var(--paper); box-shadow: inset 0 0 0 1px var(--line-2); animation: pop .35s var(--spring); }
-.board-modes[hidden] { display: none; }
-.board-modes button { padding: 6px 10px; border-radius: var(--r-pill); font: 500 12.5px/1 var(--font-sans); color: var(--muted); white-space: nowrap; transition: color .2s, background .2s; }
-.board-modes button:hover { color: var(--ink); }
-.board-modes button[aria-checked="true"] { color: var(--paper-2); background: var(--ink); }
-/* phones: the bar is full, so the toggle sits just above it */
-@media (max-width: 760px) {
-  /* fixed inside the bar (which is transformed), so it centres on the whole bar rather than the view buttons */
-  .board-modes { position: fixed; left: 50%; bottom: calc(100% + 14px); translate: -50% 0; margin: 0; background: var(--paper-2); box-shadow: 0 0 0 1px var(--line-2), 0 6px 20px rgba(18, 18, 18, .12); }
-}
 .viewer__credit { margin-left: auto; padding: 8px 14px; border-radius: var(--r-pill); font: 500 13px/1 var(--font-sans); color: rgba(255, 255, 255, .85); text-decoration: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25); transition: background .2s, color .2s; }
 .viewer__credit:hover { background: #fff; color: #121212; }

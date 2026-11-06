@@ -97,8 +97,31 @@
   const TINT = { note: 'yellow', person: 'blue', testimonial: 'pink', milestone: 'green', logos: 'purple', snippets: 'orange' };
   // with folders on, the work lives in folders, so what's left of it (moments, steps, milestones) reads as notes too
   const workNote = (ev) => isWork(ev) && !isFolder(ev);
-  const tintOf = (ev) => (workNote(ev) ? `tint-${ev.color || (ev.type === 'milestone' ? 'green' : 'yellow')}`
+  const baseTint = (ev) => (workNote(ev) ? `tint-${ev.color || (ev.type === 'milestone' ? 'green' : 'yellow')}`
     : isWork(ev) || !TINT[ev.type] ? '' : `tint-${ev.color || TINT[ev.type]}`);
+  // in Stories no two notes in a row share a colour: one that would repeat the note before it takes the pastel used least
+  // lately that differs from both its neighbours (kept per card, so its sheet opens in the same colour)
+  const NOTE_TINTS = ['yellow', 'blue', 'pink', 'green', 'purple', 'orange'].map((c) => `tint-${c}`);
+  const spread = new Map();
+  const tintOf = (ev) => (view === 'days' && spread.get(ev.id)) || baseTint(ev);
+  function spreadTints(root) {
+    const notes = $$('.card[class*="tint-"]', root);
+    const tint = (el) => el && [...el.classList].find((k) => k.startsWith('tint-'));
+    const used = new Map(NOTE_TINTS.map((c) => [c, -1]));
+    spread.clear();
+    let prev = '';
+    notes.forEach((el, i) => {
+      const cur = tint(el), next = tint(notes[i + 1]);
+      let t = cur;
+      if (t === prev) {
+        t = NOTE_TINTS.filter((c) => c !== prev && c !== next).reduce((a, c) => (used.get(c) < used.get(a) ? c : a));
+        el.classList.replace(cur, t);
+        spread.set(el.dataset.id, t);
+      }
+      used.set(t, i);
+      prev = t;
+    });
+  }
   const DEFAULT_SPAN = { note: 2, milestone: 2, quote: 2, person: 2, case: 4, step: 2, testimonial: 2, video: 2, logos: 2, snippets: 3, slot: 3, project: 2, moment: 2 };
   const tagsHTML = (ev) => (ev.services && ev.services.length ? `<div class="tags">${ev.services.map((s) => `<span class="pill">${s}</span>`).join('')}</div>` : '');
 
@@ -207,7 +230,7 @@
     }
     const tag = clickable(ev) ? 'button' : 'div';
     const kind = ev.type === 'quote' || ev.type === 'slot' ? '' : work ? 'work-card' : 'note-card';
-    const cls = ['card', kind, tintOf(ev), `card--${ev.type}`, ev.type === 'project' && 'card--case', isFolder(ev) && 'card--folder', workNote(ev) && 'work-card--note', ev.photos && !isFolder(ev) && 'has-photos', visited.has(ev.id) && 'is-visited', ev.tbc && 'is-tbc'].filter(Boolean).join(' ');
+    const cls = ['card', kind, baseTint(ev), `card--${ev.type}`, ev.type === 'project' && 'card--case', isFolder(ev) && 'card--folder', workNote(ev) && 'work-card--note', ev.photos && !isFolder(ev) && 'has-photos', visited.has(ev.id) && 'is-visited', ev.tbc && 'is-tbc'].filter(Boolean).join(' ');
     const extra = ev.case ? ` data-case="${ev.case}"` : '';
     const label = tag === 'button' ? ` aria-label="${labelFor(ev)}"` : '';
     return `<${tag} class="${cls}" data-id="${ev.id}"${extra}${label}>${inner}</${tag}>`;
@@ -221,7 +244,8 @@
 
   /* ── Columns ──────────────────────────────────────── */
   // open on Stories, the studio by the day, unless the address names another view (?view=projects, ?view=explore)
-  let view = { projects: 'projects', explore: 'explore' }[new URLSearchParams(location.search).get('view')] || 'days';
+  // Projects opens first; Stories and Exploration are kept in the address (?view=stories, ?view=explore)
+  let view = { stories: 'days', days: 'days', explore: 'explore' }[new URLSearchParams(location.search).get('view')] || 'projects';
 
   // Projects view: one column per company, newest first, holding its projects and the work linked to them
   const CASE_EV = Object.fromEntries(ALL.filter((e) => e.type === 'case').map((e) => [e.case, e]));
@@ -440,17 +464,14 @@
     </div>`;
   }
 
-  /* ── Exploration: design references, the images alone, three ways to move through them ── */
+  /* ── Exploration: design references, the images alone, on one endless board ── */
   // the images come from assets/img/explore (a Pinterest board of references, see SOURCE.txt there); each is read once
-  // for its colour, which groups the islands and orders the spectrum. Toggled beside Exploration and kept in the address (?board=)
+  // for its colour, which groups them into islands
   const SIZES = (window.CMS && window.CMS.sizes) || {};
   const BOARD_SOURCE = 'https://in.pinterest.com/zaryan01/devx_2/';
   const EXPLORE = Object.keys(SIZES).filter((p) => p.startsWith('assets/img/explore/')).sort()
     .map((src) => { const [w, h] = SIZES[src]; return { src, ar: w / h, kind: 'img', credit: BOARD_SOURCE }; });
   const board = $('.board');
-  const BOARDS = [['islands', 'Islands'], ['spectrum', 'Spectrum'], ['deal', 'Deal']];
-  const urlBoard = new URLSearchParams(location.search).get('board');
-  let boardMode = BOARDS.some(([k]) => k === urlBoard) ? urlBoard : 'islands';
   const jitter = (n, k) => { const x = Math.sin(n * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
   const wrap = (v, m) => ((v % m) + m) % m;
 
@@ -498,19 +519,6 @@
     });
     return { items, tileW: 3600, tileH: 3200, wrapY: true };
   }
-  function layoutSpectrum(col) {
-    // darks, then the colours by hue, then lights: one long gradient, drifting sideways and looping
-    const key = (i) => { const c = col[i]; return c.s < 0.15 ? (c.l < 0.5 ? -1 + c.l : 400 + c.l) : c.h; };
-    const order = EXPLORE.map((p, i) => i).sort((a, b) => key(a) - key(b));
-    let x = 0;
-    const items = order.map((idx, n) => {
-      const w = 280 + jitter(idx, 1) * 140, h = w / EXPLORE[idx].ar;
-      const it = { x, y: Math.sin(n * 0.9) * 120 - h / 2 + (jitter(idx, 2) - 0.5) * 60, w, idx };
-      x += w + 150 + jitter(idx, 3) * 70;
-      return it;
-    });
-    return { items, tileW: x, tileH: 0, wrapY: false };
-  }
   function drawWorld() {
     if (!world) return;
     const { items, tileW, tileH, wrapY } = world, z = cam.z;
@@ -545,72 +553,21 @@
     const D = 26 * z * (z < 0.5 ? 2 : 1);
     board.style.backgroundSize = `${D}px ${D}px`;
     board.style.backgroundPosition = `${wrap(-cam.x * z + viewW / 2, D)}px ${wrap(-cam.y * z + viewH / 2, D)}px`;
-    if (boardMode === 'spectrum') tintRoom();
   }
-  // in the spectrum the room takes on, faintly, the colour of what's in the middle of it
-  let tintAt = -1;
-  function tintRoom() {
-    const { items, tileW } = world;
-    let best = null, bd = Infinity;
-    for (const it of items) { const d = Math.abs(wrap(it.x + it.w / 2 - cam.x + tileW / 2, tileW) - tileW / 2); if (d < bd) { bd = d; best = it; } }
-    if (!best || best.idx === tintAt) return;
-    tintAt = best.idx;
-    const [r, g, b] = colours[best.idx].rgb;
-    board.style.setProperty('--room', `rgb(${r} ${g} ${b})`);
-  }
-
-  // deal: one image at a time onto an empty table; the older ones shrink back and drift to the edges
-  let dealt = [], dealNext = 0;
-  function deal() {
-    const idx = dealNext % EXPLORE.length;
-    dealNext++;
-    const p = EXPLORE[idx];
-    const fit = Math.min(viewW * (mq.matches ? 0.78 : 0.42), (viewH - 160) * 0.7 * p.ar);
-    const el = document.createElement('button');
-    el.className = 'ex ex--card';
-    el.dataset.ex = idx;
-    el.setAttribute('aria-label', 'Design reference: view it big');
-    el.style.width = `${fit}px`;
-    el.style.height = `${fit / p.ar}px`;
-    el.innerHTML = `<img src="${p.src}" alt="" draggable="false">`;
-    layer.append(el);
-    const r = (jitter(dealNext, 1) - 0.5) * 8;
-    el.style.setProperty('--x', `${viewW / 2 - fit / 2}px`);
-    el.style.setProperty('--y', `${viewH / 2 - fit / p.ar / 2 - 30}px`);
-    el.style.setProperty('--r', `${r}deg`);
-    el.style.setProperty('--s', '1');
-    dealt.unshift({ el, a: jitter(dealNext, 2) * Math.PI * 2, fit, ar: p.ar });
-    dealt.forEach((d, age) => {
-      if (!age) return;
-      // pushed out along its own direction, smaller with every deal, gone after eight
-      const s = Math.pow(0.74, age), dist = Math.min(viewW, viewH) * (0.36 + age * 0.08);
-      const x = viewW / 2 + Math.cos(d.a) * dist * 1.4 - (d.fit * s) / 2, y = viewH / 2 - 30 + Math.sin(d.a) * dist - (d.fit / d.ar * s) / 2;
-      d.el.style.setProperty('--x', `${x - (d.fit - d.fit * s) / 2}px`);
-      d.el.style.setProperty('--y', `${y - (d.fit / d.ar - d.fit / d.ar * s) / 2}px`);
-      d.el.style.setProperty('--s', s.toFixed(3));
-      d.el.classList.toggle('is-old', age > 0);
-      if (age > 7) d.el.classList.add('is-gone');
-    });
-    dealt.filter((d, age) => age > 8).forEach((d) => d.el.remove());
-    dealt = dealt.slice(0, 9);
-  }
-
   async function buildBoard() {
     viewW = board.clientWidth || innerWidth;
     viewH = board.clientHeight || innerHeight;
-    board.dataset.mode = boardMode;
     board.innerHTML = '<div class="board__layer"></div>';
     layer = $('.board__layer', board);
-    drawn.clear(); dealt = []; tintAt = -1;
-    if (boardMode === 'deal') { dealNext = 0; deal(); return; }
+    drawn.clear();
     const col = await readColours();
     if (view !== 'explore') return;
-    world = boardMode === 'islands' ? layoutIslands(col) : layoutSpectrum(col);
-    cam = boardMode === 'islands' ? { x: 650, y: 380, z: mq.matches ? 0.42 : 0.62 } : { x: viewW / 2 - 80, y: 0, z: mq.matches ? 0.7 : 1 };
+    world = layoutIslands(col);
+    cam = { x: 650, y: 380, z: mq.matches ? 0.42 : 0.62 };
     drawWorld();
   }
 
-  // moving: drag any way with a glide, the wheel pans (and in Islands zooms), two fingers pinch
+  // moving: drag any way with a glide, the wheel zooms (a sideways swipe pans), two fingers pinch
   let pan = null, glide = 0, panMoved = false;
   const pointers = new Map();
   const zoomAt = (sx, sy, z) => {
@@ -619,9 +576,9 @@
     cam = { x: wx - (sx - viewW / 2) / z, y: wy - (sy - viewH / 2) / z, z };
     drawWorld();
   };
-  const moveBy = (dx, dy) => { cam.x += dx / cam.z; cam.y += boardMode === 'spectrum' ? 0 : dy / cam.z; drawWorld(); };
+  const moveBy = (dx, dy) => { cam.x += dx / cam.z; cam.y += dy / cam.z; drawWorld(); };
   board.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0 || boardMode === 'deal') return;
+    if (e.button !== 0) return;
     cancelAnimationFrame(glide);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     pan = { x: e.clientX, y: e.clientY, t: performance.now(), vx: 0, vy: 0, d: 0 };
@@ -631,7 +588,7 @@
     if (!pan || !pointers.has(e.pointerId)) return;
     const prev = pointers.get(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size === 2 && boardMode === 'islands') {
+    if (pointers.size === 2) {
       // pinch: the zoom follows the fingers' spread, around the point between them
       const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
       const r = board.getBoundingClientRect();
@@ -665,41 +622,19 @@
   addEventListener('pointerup', release);
   addEventListener('pointercancel', release);
   board.addEventListener('wheel', (e) => {
-    if (boardMode === 'deal') return;
     e.preventDefault();
     const k = e.deltaMode === 1 ? 32 : 1, r = board.getBoundingClientRect();
-    // islands: the wheel (or a trackpad pinch) zooms around the pointer; a sideways swipe still pans
-    if (boardMode === 'islands' && (e.ctrlKey || Math.abs(e.deltaY) > Math.abs(e.deltaX))) return zoomAt(e.clientX - r.left, e.clientY - r.top, cam.z * Math.exp(-e.deltaY * k * (e.ctrlKey ? 0.01 : 0.0015)));
-    moveBy((e.deltaX || (boardMode === 'spectrum' ? e.deltaY : 0)) * k, boardMode === 'spectrum' ? 0 : e.deltaY * k);
+    // the wheel (or a trackpad pinch) zooms around the pointer; a sideways swipe still pans
+    if ((e.ctrlKey || Math.abs(e.deltaY) > Math.abs(e.deltaX))) return zoomAt(e.clientX - r.left, e.clientY - r.top, cam.z * Math.exp(-e.deltaY * k * (e.ctrlKey ? 0.01 : 0.0015)));
+    moveBy(e.deltaX * k, e.deltaY * k);
   }, { passive: false });
   board.addEventListener('keydown', (e) => {
     if (viewing) return;
-    if (boardMode === 'deal' && [' ', 'Enter', 'ArrowRight'].includes(e.key)) { e.preventDefault(); return deal(); }
     const by = { ArrowRight: [160, 0], ArrowLeft: [-160, 0], ArrowDown: [0, 160], ArrowUp: [0, -160] }[e.key];
-    if (by && boardMode !== 'deal') { e.preventDefault(); moveBy(...by); }
-    if (boardMode === 'islands' && (e.key === '+' || e.key === '=' || e.key === '-')) zoomAt(viewW / 2, viewH / 2, cam.z * (e.key === '-' ? 0.8 : 1.25));
+    if (by) { e.preventDefault(); moveBy(...by); }
+    if ((e.key === '+' || e.key === '=' || e.key === '-')) zoomAt(viewW / 2, viewH / 2, cam.z * (e.key === '-' ? 0.8 : 1.25));
   });
   addEventListener('resize', () => { if (view === 'explore') buildBoard(); });
-
-  // the toggle beside Exploration: switching redraws the board
-  const modesEl = Object.assign(document.createElement('div'), { className: 'board-modes', hidden: true });
-  modesEl.setAttribute('role', 'radiogroup');
-  modesEl.setAttribute('aria-label', 'Explore as');
-  modesEl.innerHTML = BOARDS.map(([k, label]) => `<button role="radio" data-board="${k}">${label}</button>`).join('');
-  const syncModes = () => {
-    modesEl.hidden = view !== 'explore';
-    $$('[data-board]', modesEl).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.board === boardMode)));
-  };
-  modesEl.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-board]');
-    if (!b || b.dataset.board === boardMode) return;
-    boardMode = b.dataset.board;
-    const q = new URLSearchParams(location.search);
-    if (boardMode === 'islands') q.delete('board'); else q.set('board', boardMode);
-    history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
-    syncModes();
-    buildBoard();
-  });
 
   /* ── Render ───────────────────────────────────────── */
   function render() {
@@ -713,6 +648,7 @@
     track.innerHTML =
       columnsFor().map((c, i) => colHTML(c, i)).join('') +
       `<section class="col col--end"><div class="col-head"></div>${outroHTML()}</section>`;
+    spreadTints(track);
     placeCta();
     layoutBars();
     syncBar();
@@ -776,6 +712,7 @@
     }
     closeDay();
     agenda.innerHTML = html + `<div class="ag-outro">${outroHTML()}</div>`;
+    spreadTints(agenda);
     placeCta();
     syncBar();
   }
@@ -906,12 +843,14 @@
   let sideLast = 0, sideIdle = 0;
   function showSide() {
     document.body.classList.remove('side-hidden');
+    anchorBar();
     side.classList.toggle('is-over', timeline.scrollLeft > 8);
   }
   function hideSide() {
     if (side.matches(':hover, :focus-within')) return;
     document.body.classList.add('side-hidden');
     side.classList.remove('is-over');
+    anchorBar();
     settleSide();
   }
   // never rest on the empty strip the panel left: finish the move so the work sits against the edge
@@ -949,19 +888,29 @@
   const ind = $('.dyn-ind');
   function syncBar() {
     $$('[data-view]', seg).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.view === view)));
-    // the board's toggle shows or hides first: it sits between the buttons, so it moves where the highlight goes
     syncFilter();
-    syncModes();
     const on = $(`[data-view="${view}"]`, seg);
     if (on && on.offsetWidth) { ind.style.left = `${on.offsetLeft}px`; ind.style.width = `${on.offsetWidth}px`; }
+    anchorBar();
   }
+  // the view buttons hold still: whatever else the bar shows or hides runs off to their right, and they move only when
+  // the sidebar goes, to stay centred on the work. The owner pill centres there on its own
+  function anchorBar() {
+    if (mq.matches) { bar.style.left = bar.style.transform = ''; return; }
+    const away = view === 'explore' || document.body.classList.contains('side-hidden');
+    const x = away ? innerWidth / 2 : (innerWidth + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--side'))) / 2;
+    if (bar.classList.contains('is-owner')) { bar.style.left = `${x}px`; bar.style.transform = ''; return; }
+    bar.style.transform = 'none';
+    bar.style.left = `${Math.round(x - seg.offsetLeft - seg.offsetWidth / 2)}px`;
+  }
+  addEventListener('resize', anchorBar);
   function setView(v) {
     if (v === view) return;
     // Stories runs by date and Projects by what leads, so there is no shared place to keep: start each at its beginning
     view = v;
     // the address carries the view, so a refresh or a shared link lands on it
     const q = new URLSearchParams(location.search);
-    if (v === 'days') q.delete('view'); else q.set('view', v);
+    if (v === 'projects') q.delete('view'); else q.set('view', v === 'days' ? 'stories' : v);
     history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
     showSide();
     render();
@@ -981,9 +930,10 @@
   // the bar's button only steps in once the sidebar, with its own, has slid away
   bar.append(Object.assign(document.createElement('span'), { className: 'dyn-div dyn-div--cta' }), ctaBar);
   // the sidebar (or on phones the intro) is drawn again with every view, so the button is put back each time, under the title
+  // the sidebar's Work with us sits under the line about the studio
   const placeCta = () => {
-    const title = $(mq.matches ? '.ag-intro h1' : '.side__top h1');
-    if (title) title.after(ctaIntro);
+    const para = $(mq.matches ? '.ag-intro p' : '.side__mid p');
+    if (para) para.after(ctaIntro);
   };
 
   /* ── Filter: Projects only ────────────────────────── */
@@ -992,7 +942,6 @@
   const svg = (d) => `<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const FILTER_ICON = { lines: svg('M2.5 4h11M4.5 8h7M6.5 12h3'), caret: svg('M4.5 6.5 8 10l3.5-3.5'), x: svg('M5 5l6 6M11 5l-6 6') };
   const offered = FILTERS.filter((f) => filterCount(f.key));
-  $('[data-view="explore"]', seg).after(modesEl);
   filterEl.innerHTML =
     `<button class="filter__btn" aria-expanded="false">${FILTER_ICON.lines}<span class="filter__cur"></span><span class="filter__caret">${FILTER_ICON.caret}</span></button>` +
     `<div class="filter__opts" role="radiogroup" aria-label="Show">` +
@@ -1039,8 +988,9 @@
     a.innerHTML = av.logo ? logoHTML(av.logo, 9) : av.img ? `<img src="${av.img}" alt="">` : av.mono;
     $('.dyn-who').textContent = label;
     bar.classList.add('is-owner');
+    anchorBar();
   }
-  const clearOwner = () => { bar.className = 'dynbar'; };
+  const clearOwner = () => { bar.className = 'dynbar'; anchorBar(); };
 
   /* ── Notes: lift out, blur the rest ───────────────── */
   let open = null; // { kind: 'note' | 'sheet', el, ... }
@@ -1635,7 +1585,6 @@
     // the whole sheet drops straight down from where you are
     sheet.classList.add('is-leaving');
     scrim.classList.remove('is-in');
-    bar.style.left = '';
     bar.classList.remove('is-tucked');
     $$('video', sheet).forEach((v) => v.pause());
     const hide = () => {
@@ -1736,9 +1685,8 @@
     }
     if (viewing && t.closest('.viewer__cap')) return;
     if (viewing && t.closest('.viewer')) return closeViewer();
-    // the board: a piece opens big; in Deal, the newest opens and anywhere else deals the next
+    // the board: a piece opens big
     const ex = t.closest('.board .ex');
-    if (boardMode === 'deal' && view === 'explore' && t.closest('.board') && !viewing && (!ex || ex !== (dealt[0] && dealt[0].el))) return deal();
     if (ex) return panMoved ? undefined : openPiece(Number(ex.dataset.ex), $('img', ex));
     const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img');
     if (pic) return openViewer(pic.getAttribute('src'), pic);
