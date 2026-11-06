@@ -1032,9 +1032,6 @@ body[data-focus="note"] .allday-bar { opacity: .16; }
 }
 /* the ruled lines of Stories, with the client where the date would be, lined up with the left edge of the work */
 .col--wall { --slide-pad: 72px; flex: 0 0 auto; }
-.col--wall:first-child { --slide-pad: calc((100vw - var(--side) - var(--slide-w)) / 2); }
-/* the first one sits centred beside the panel, the same air on both sides */
-.col--wall:first-child .slide { padding-right: var(--slide-pad); }
 .col--wall .col-head { flex-direction: row; justify-content: flex-start; gap: 10px; padding-left: calc(var(--slide-pad) + 2px); }
 .col--wall .col-head b { font: 500 15px/1.25 var(--font-sans); letter-spacing: -0.01em; white-space: nowrap; }
 .col--wall .col-head .fold__av, .wk__who .fold__av { width: 26px; height: 26px; flex: none; font-size: 11px; color: var(--paper-2); background: var(--ink); box-shadow: none; }
