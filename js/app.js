@@ -485,7 +485,7 @@
   // the same scatter for everyone: a small seeded random for each slot on the board
   const jitter = (n, k) => { const x = Math.sin(n * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
   const PUSH = ['brand', 'yellow', 'blue', 'pink', 'green'];
-  let cam = { x: -56, y: -28 }, cols = [], boardW = 1, built = ''; // start a little in, so the first column has air on its left
+  let cam = { x: -56, y: -28 }, cols = [], boardW = 1, built = '', viewW = innerWidth; // start a little in, so the first column has air on its left
   function itemHTML(it, n, cw) {
     const r = (jitter(n, 1) - 0.5) * 6.5; // −3.25° to 3.25°
     const hold = jitter(n, 2) < 0.58 ? `<i class="pin__tape" style="--tr:${((jitter(n, 3) - 0.5) * 14).toFixed(1)}deg"></i>`
@@ -515,6 +515,7 @@
   }), { root: board, threshold: 0.25 });
   function buildBoard() {
     const vw = board.clientWidth || innerWidth, vh = board.clientHeight || innerHeight;
+    viewW = vw; // measured here once, so moving the board never has to read its size
     const cw = mq.matches ? 168 : 290, gapX = mq.matches ? 28 : 72, step = cw + gapX;
     const key = `${cw}:${vw}:${vh}`;
     if (key === built) return applyCam();
@@ -546,7 +547,7 @@
   const wrap = (v, m) => ((v % m) + m) % m;
   const DOT = 26; // the grid behind the pins moves with them, so it reads as the board itself
   function applyCam() {
-    const vw = board.clientWidth, step = cols.length ? boardW / cols.length : 1;
+    const vw = viewW, step = cols.length ? boardW / cols.length : 1;
     board.style.backgroundPosition = `${-wrap(cam.x, DOT)}px ${-wrap(cam.y, DOT)}px`;
     cols.forEach((c) => {
       const x = wrap(c.x - cam.x + step, boardW) - step;
@@ -556,12 +557,14 @@
     });
   }
   // the pins swing from their tape as the board moves, the way paper does, and settle when it stops
-  let swayIdle = 0;
+  let swayIdle = 0, swayAt = 0;
   function sway(vx) {
     if (reduced.matches) return;
-    board.style.setProperty('--sway', `${clamp(vx * 2.4, -5, 5).toFixed(2)}deg`);
+    // every pin inherits it, so it's only rewritten when the angle moves by a visible step; the pins' own easing fills in
+    const deg = Math.round(clamp(vx * 2.4, -5, 5) * 2) / 2;
+    if (deg !== swayAt) { swayAt = deg; board.style.setProperty('--sway', `${deg}deg`); }
     clearTimeout(swayIdle);
-    swayIdle = setTimeout(() => board.style.setProperty('--sway', '0deg'), 90);
+    swayIdle = setTimeout(() => { swayAt = 0; board.style.setProperty('--sway', '0deg'); }, 90);
   }
   // drag it any way, with a little glide when you let go; the wheel and trackpad move it too
   let pan = null, glide = 0, panMoved = false;
@@ -575,7 +578,7 @@
   addEventListener('pointermove', (e) => {
     if (!pan) return;
     const dx = e.clientX - pan.x, dy = e.clientY - pan.y, now = performance.now(), dt = Math.max(1, now - pan.t);
-    if (!panMoved && Math.hypot(dx, dy) > 5) { panMoved = true; board.setPointerCapture?.(e.pointerId); board.classList.add('is-panning'); }
+    if (!panMoved && Math.hypot(dx, dy) > 5) { panMoved = true; try { board.setPointerCapture(e.pointerId); } catch (_) {} board.classList.add('is-panning'); }
     if (!panMoved) return;
     pan.vx = -dx / dt; pan.vy = -dy / dt;
     pan.x = e.clientX; pan.y = e.clientY; pan.t = now;
@@ -810,7 +813,8 @@
     const at = timeline.scrollLeft <= 8 ? 0 : list.indexOf(list.reduce((a, b) => (dist(b) < dist(a) ? b : a)));
     if (at !== slideIx && at >= 0) { slideIx = at; syncCount(); }
   }
-  timeline.addEventListener('scroll', followScroll, { passive: true });
+  let following = 0;
+  timeline.addEventListener('scroll', () => { if (!following) following = requestAnimationFrame(() => { following = 0; followScroll(); }); }, { passive: true });
   $$('[data-step]').forEach((b) => b.addEventListener('click', () => goSlide(slideIx + Number(b.dataset.step))));
 
   /* ── The sidebar gets out of the way ───────────── */
