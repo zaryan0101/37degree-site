@@ -1170,9 +1170,7 @@ body[data-showing="explore"] .timeline, body[data-showing="explore"] .agenda, bo
 @keyframes deal-in { from { transform: translate3d(var(--x), calc(var(--y) + 70vh), 0) rotate(calc(var(--r) * -3)) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .ex--card { transition: none; animation: none; } .ex img { transition: none; } }
 
-/* the bar on the board: the views, a hint, and Work with us, since no sidebar holds it here */
-.dyn-hint { display: none; padding: 0 10px 0 6px; font: 400 13px/1 var(--font-sans); color: var(--muted); white-space: nowrap; }
-body[data-showing="explore"] .dyn-hint { display: inline; }
+/* the bar on the board: the views and Work with us, since no sidebar holds it here */
 body[data-showing="explore"] .minimap, body[data-showing="explore"] .dyn-step { display: none !important; }
 @media (min-width: 761px) {
   body[data-showing="explore"] .dynbar { left: 50%; }
@@ -1180,7 +1178,6 @@ body[data-showing="explore"] .minimap, body[data-showing="explore"] .dyn-step { 
   body[data-showing="explore"] .dynbar .dyn-div--cta { margin: 0 4px; }
 }
 @media (max-width: 760px) {
-  body[data-showing="explore"] .dyn-hint { display: none; }
 }
 
 /* the viewer, for a piece from the board: its clip plays, and under it, whose it is and the way into that work */

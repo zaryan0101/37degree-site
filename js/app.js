@@ -449,7 +449,6 @@
     .map((src) => { const [w, h] = SIZES[src]; return { src, ar: w / h, kind: 'img', credit: BOARD_SOURCE }; });
   const board = $('.board');
   const BOARDS = [['islands', 'Islands'], ['spectrum', 'Spectrum'], ['deal', 'Deal']];
-  const HINTS = { islands: 'Drag · scroll to zoom', spectrum: 'Drag to drift', deal: 'Click to deal' };
   const urlBoard = new URLSearchParams(location.search).get('board');
   let boardMode = BOARDS.some(([k]) => k === urlBoard) ? urlBoard : 'islands';
   const jitter = (n, k) => { const x = Math.sin(n * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
@@ -600,7 +599,6 @@
     viewW = board.clientWidth || innerWidth;
     viewH = board.clientHeight || innerHeight;
     board.dataset.mode = boardMode;
-    $('.dyn-hint').textContent = HINTS[boardMode];
     board.innerHTML = '<div class="board__layer"></div>';
     layer = $('.board__layer', board);
     drawn.clear(); dealt = []; tintAt = -1;
