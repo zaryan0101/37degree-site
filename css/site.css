@@ -159,24 +159,25 @@ em { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
 .filter.is-on .filter__caret { color: inherit; opacity: .6; }
 
 /* the list: every filter with how many projects it holds */
-.filter--sprout .filter__opts {
+.filter--nav .filter__opts {
   position: absolute; z-index: 80;
   flex-direction: column; min-width: 230px; padding: 6px;
   background: var(--paper-2); border: 1px solid var(--line-2); border-radius: var(--r-card); box-shadow: var(--float);
   opacity: 0; visibility: hidden; scale: .96;
   transition: opacity .2s, scale .35s var(--spring), translate .35s var(--spring), visibility 0s .35s;
 }
-.filter--sprout.is-open .filter__opts { opacity: 1; visibility: visible; scale: 1; translate: 0; transition-delay: 0s; }
-.filter--sprout .filter__opts button { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; border-radius: var(--r-inner); color: var(--ink); text-align: left; }
-.filter--sprout .filter__opts button:hover, .filter--sprout .filter__opts button[aria-checked="true"] { background: var(--paper); }
+.filter--nav.is-open .filter__opts { opacity: 1; visibility: visible; scale: 1; translate: 0; transition-delay: 0s; }
+.filter--nav .filter__opts button { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; border-radius: var(--r-inner); color: var(--ink); text-align: left; }
+.filter--nav .filter__opts button:hover, .filter--nav .filter__opts button[aria-checked="true"] { background: var(--paper); }
 
-/* a pill growing out of the Projects button in the bottom bar, its list opening upward */
-.filter--sprout { margin: 0 0 0 2px; animation: none; }
-.filter--sprout .filter__btn { height: 30px; padding: 0 10px; box-shadow: none; background: var(--paper); animation: sprout .45s var(--spring); }
-@keyframes sprout { from { opacity: 0; max-width: 0; padding-left: 0; padding-right: 0; } to { max-width: 220px; } }
-.filter--sprout .filter__btn { overflow: hidden; }
-.filter--sprout .filter__opts { bottom: calc(100% + 14px); left: 50%; translate: -50% 6px; transform-origin: bottom center; }
-.filter--sprout.is-open .filter__opts { translate: -50% 0; }
+/* in the top bar, lined up with the left edge of the work (the column's 72px in from the sidebar), its list dropping down
+   over it; when the sidebar slides away it follows, to sit beside the name */
+.filter--nav { position: absolute; top: 50%; left: calc(var(--side) + 72px); translate: 0 -50%; margin: 0; transition: left .4s var(--ease); }
+body.side-hidden .filter--nav { left: 170px; }
+.filter--nav .filter__btn { height: 32px; padding: 0 12px; box-shadow: none; }
+.filter--nav .filter__opts { top: calc(100% + 8px); left: 0; translate: 0 -6px; transform-origin: top left; }
+.filter--nav.is-open .filter__opts { translate: 0; }
+@media (prefers-reduced-motion: reduce) { .filter--nav { transition: none; } }
 
 /* ── Timeline ───────────────────────────────────────── */
 .stage { position: fixed; inset: var(--top) 0 0 0; }
@@ -812,9 +813,9 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   .dynbar .dyn-div--cta { margin: 0 3px; }
   .cta--bar .cta__in { gap: 6px; padding: 0 4px 0 10px; font-size: 12.5px; }
   .cta--bar .cta__go { width: 20px; height: 20px; }
-  .filter--sprout .filter__btn { padding: 0 8px; }
-  /* phones: the pill in the bar keeps to its icon */
-  .filter--sprout .filter__cur, .filter--sprout .filter__caret { display: none; }
+  /* phones: no sidebar, so it sits beside the light/dark switch, its list hanging from the right */
+  .filter--nav { position: relative; top: auto; left: auto; translate: none; margin: 0 8px 0 auto; }
+  .filter--nav .filter__opts { left: auto; right: 0; transform-origin: top right; }
   /* phones: a little less height in the strip */
   :root { --top: 60px; }
   .mark { gap: 8px; font-size: 17px; }

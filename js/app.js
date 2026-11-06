@@ -950,7 +950,7 @@
   const ind = $('.dyn-ind');
   function syncBar() {
     $$('[data-view]', seg).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.view === view)));
-    // the filter and the board's toggle show or hide first: they sit between the buttons, so they move where the highlight goes
+    // the board's toggle shows or hides first: it sits between the buttons, so it moves where the highlight goes
     syncFilter();
     syncModes();
     const on = $(`[data-view="${view}"]`, seg);
@@ -988,13 +988,11 @@
   };
 
   /* ── Filter: Projects only ────────────────────────── */
-  // a pill growing out of the Projects button in the bottom bar; its list opens upward
+  // in the top bar, lined up with the work it filters, where the eye already is; its list drops down over the work
   const filterEl = $('.filter');
   const svg = (d) => `<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const FILTER_ICON = { lines: svg('M2.5 4h11M4.5 8h7M6.5 12h3'), caret: svg('M4.5 6.5 8 10l3.5-3.5'), x: svg('M5 5l6 6M11 5l-6 6') };
   const offered = FILTERS.filter((f) => filterCount(f.key));
-  // it sits right after the Projects button, between it and Exploration
-  $('[data-view="projects"]', seg).after(filterEl);
   $('[data-view="explore"]', seg).after(modesEl);
   filterEl.innerHTML =
     `<button class="filter__btn" aria-expanded="false">${FILTER_ICON.lines}<span class="filter__cur"></span><span class="filter__caret">${FILTER_ICON.caret}</span></button>` +
