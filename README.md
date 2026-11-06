@@ -59,7 +59,7 @@ The calendar used to come from a Notion database. That sync is gone, so edits in
 
 ## Adding a client logo
 
-Logos live in `LOGOS` in `js/data.js` and scroll in two rows in the sidebar (one strip on phones), every row at the same speed. Each carries `ar` (width ÷ height) and `d` (how much of that box is ink), which together size it so every logo reads the same size.
+Which clients show under Trusted by, and in which row, is set by `TRUSTED_ROWS` in `js/data.js` (taken from the Figma Website page); the other logos still badge their projects. Logos live in `LOGOS` in `js/data.js` and scroll in two rows in the sidebar (one strip on phones), every row at the same speed. Each carries `ar` (width ÷ height) and `d` (how much of that box is ink), which together size it so every logo reads the same size.
 
 1. Save a trimmed, single-colour logo on a transparent background to `assets/img/logos/`.
 2. Add `{ name, src, ar, h }`: `ar` is width ÷ height. `h` is its height in the row, set by eye so all read the same size: wordmarks 12 to 18, icon-only marks 18 to 20. Add `avatarOnly: true` for a badge too detailed for the row.

@@ -199,7 +199,7 @@ const LOGOS = [
   { name: 'Induced', src: 'assets/img/logos/induced.png', ar: 6.179, d: 0.373 },
   { name: 'Solana', match: 'solana foundation', src: 'assets/img/logos/solana.png', ar: 6.717, d: 0.407 },
   { name: 'Superteam', src: 'assets/img/logos/superteam.png', ar: 7.505, d: 0.38, mk: 1.106 },
-  { name: 'Goatfish', src: 'assets/img/logos/goatfish.png', ar: 0.891, d: 0.29, mk: 0.891 },
+  { name: 'Goatfish', src: 'assets/img/logos/goatfish.png', ar: 4.894, d: 0.263, mk: 0.883 },
   { name: 'Solana Economic Zone', match: 'solana economic', src: 'assets/img/logos/sez.png', ar: 0.876, d: 0.669, mk: 0.876 },
   { name: 'Omnipair', src: 'assets/img/logos/omnipair.png', ar: 5.313, d: 0.305, mk: 0.979 },
   { name: 'Almanac', src: 'assets/img/logos/almanac.png', ar: 1, d: 0.467, mk: 1 },
@@ -210,6 +210,12 @@ const LOGOS = [
   { name: 'Aria Music', src: 'assets/img/logos/aria.png', ar: 1.021, d: 0.377, mk: 1.021 },
   { name: 'ElMuse', src: 'assets/img/logos/elmuse.png', ar: 4.771, d: 0.311 },
   { name: 'Solana Ecosystem Call', match: 'solana ecosystem', src: 'assets/img/logos/sec.png', ar: 1, d: 0.592, mk: 1, avatarOnly: true },
+];
+
+// the clients shown under "Trusted by", in two rows, as set in Figma (Website page); every other logo above still badges its projects
+const TRUSTED_ROWS = [
+  ['Deccan AI', 'Valley', 'Solana', 'Omnipair', 'DemandFarm', 'Goatfish'],
+  ['Sidecar', 'Induced', 'Superteam', 'Solana Economic Zone', 'Almanac', 'DevX Labs', 'ElMuse'],
 ];
 
 const SNIPPETS = ['assets/img/snip-1.jpg', 'assets/img/snip-2.jpg', 'assets/img/snip-3.jpg', 'assets/img/snip-4.jpg'];

@@ -397,7 +397,7 @@
   }
 
   // the clients run past in a loop: two copies of the row side by side, so one picks up where the other ends
-  const trustedRun = `<div class="trusted__run">${LOGOS.map((l) => logoHTML(l.src, 18)).join('')}</div>`;
+  const trustedRun = `<div class="trusted__run">${TRUSTED_ROWS.flat().map((n) => LOGOS.find((l) => l.name === n)).filter(Boolean).map((l) => logoHTML(l.src, 18)).join('')}</div>`;
   const introCopy = `<h1>Our story, <em>by the day</em>.</h1>
     <p>37degree is a design-led growth studio for Tech &amp; AI companies. Notes are how we got here. Work is what we've shipped.</p>
     <div class="legend"><span>${icon.note}Notes</span><span>${icon.folder}Work</span></div>
@@ -405,7 +405,8 @@
 
   /* ── The sidebar, the same in both views: our Stories intro on top, and what backs it up at the foot, as on Puru's ── */
   const LOGO_GAP = 28, LOGO_SPEED = 20; // px, px per second
-  const TRUSTED = LOGOS.filter((l) => !l.avatarOnly);
+  // the clients under Trusted by: the two rows set in data.js, in order
+  const TRUSTED = TRUSTED_ROWS.map((row) => row.map((name) => LOGOS.find((l) => l.name === name)).filter(Boolean));
   // a row of logos that runs in a loop; its length sets its time, so every row moves at the same speed
   function logoRow(list, reverse) {
     const set = list.map((l) => logoHTML(l.src, 18)).join('');
@@ -413,7 +414,7 @@
     return `<div class="marquee${reverse ? ' marquee--rev' : ''}" style="--gap:${LOGO_GAP}px;--dur:${(w / LOGO_SPEED).toFixed(1)}s"><div class="marquee__track"><div class="marquee__set">${set}</div><div class="marquee__set" aria-hidden="true">${set}</div></div></div>`;
   }
   function logosHTML() {
-    return `<div class="marquees" role="group" aria-label="Trusted by">${logoRow(TRUSTED.filter((_, i) => i % 2 === 0))}${logoRow(TRUSTED.filter((_, i) => i % 2), true)}</div>`;
+    return `<div class="marquees" role="group" aria-label="Trusted by">${logoRow(TRUSTED[0])}${logoRow(TRUSTED[1], true)}</div>`;
   }
   // the sidebar in two halves: our Stories intro up top, the way in right under its title, and everything that backs it up at the foot;
   // the legend is a guide too: reach for Notes or Work and the rest steps back
