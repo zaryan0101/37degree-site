@@ -866,9 +866,10 @@
   const ind = $('.dyn-ind');
   function syncBar() {
     $$('[data-view]', seg).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.view === view)));
+    // the filter shows or hides first: it sits between the buttons, so it moves where the highlight has to go
+    syncFilter();
     const on = $(`[data-view="${view}"]`, seg);
     if (on && on.offsetWidth) { ind.style.left = `${on.offsetLeft}px`; ind.style.width = `${on.offsetWidth}px`; }
-    syncFilter();
   }
   function setView(v) {
     if (v === view) return;
