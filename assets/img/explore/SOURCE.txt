@@ -1,0 +1,24 @@
+Design references from the Pinterest board https://in.pinterest.com/zaryan01/devx_2/ (Zaryan's), for the Exploration page.
+They belong to their original creators: credit is shown as 'via Pinterest' when one is opened.
+
+assets/img/explore/devx-01.jpg  https://i.pinimg.com/736x/95/bc/e4/95bce4f5a39f42c26d50803726a3836e.jpg
+assets/img/explore/devx-02.jpg  https://i.pinimg.com/736x/cd/9b/cf/cd9bcf5800a507ce92ca443c719a4774.jpg
+assets/img/explore/devx-03.jpg  https://i.pinimg.com/736x/1d/5d/ca/1d5dcaf2238850d59d8221c15f1aaf6d.jpg
+assets/img/explore/devx-04.jpg  https://i.pinimg.com/736x/d4/55/4a/d4554ab4a2145608b142094f44a2f44f.jpg
+assets/img/explore/devx-05.jpg  https://i.pinimg.com/736x/a0/7b/76/a07b768aa7b2628edc3ef72fab20d736.jpg
+assets/img/explore/devx-06.jpg  https://i.pinimg.com/736x/c3/c1/0a/c3c10a879ff3d8cd5e52ff0d23a59242.jpg
+assets/img/explore/devx-07.jpg  https://i.pinimg.com/736x/69/58/f6/6958f6662d422e0743ec52a981672161.jpg
+assets/img/explore/devx-08.jpg  https://i.pinimg.com/736x/92/e6/11/92e61189f20962dce36b81e889105e82.jpg
+assets/img/explore/devx-09.jpg  https://i.pinimg.com/736x/da/65/1d/da651db25ca8a381acfb9138db7fc77c.jpg
+assets/img/explore/devx-10.jpg  https://i.pinimg.com/736x/f5/07/70/f507707c14792dc6697fce2c19b8d6d4.jpg
+assets/img/explore/devx-11.jpg  https://i.pinimg.com/736x/e2/63/cf/e263cfa13b0d3a2eb60f99925fb480f5.jpg
+assets/img/explore/devx-12.jpg  https://i.pinimg.com/736x/4b/6f/8e/4b6f8eae0980e8e8da71d928ad788670.jpg
+assets/img/explore/devx-13.jpg  https://i.pinimg.com/736x/b1/76/e7/b176e79e2506a26122690bdb0eb58ca5.jpg
+assets/img/explore/devx-14.jpg  https://i.pinimg.com/736x/a1/bb/a7/a1bba789584e6e45b23942579266c2a2.jpg
+assets/img/explore/devx-15.jpg  https://i.pinimg.com/736x/a3/ce/1a/a3ce1ae554f2f117eeba17be7b08946b.jpg
+assets/img/explore/devx-16.jpg  https://i.pinimg.com/736x/ab/45/e0/ab45e0e9b926caccd7fc0e05a9acaec1.jpg
+assets/img/explore/devx-17.jpg  https://i.pinimg.com/736x/29/12/0c/29120c5cb0af83f4c4d05eabfabdfb87.jpg
+assets/img/explore/devx-18.jpg  https://i.pinimg.com/736x/00/e5/fd/00e5fd8f07ac6c4393e1c960bef3e52e.jpg
+assets/img/explore/devx-19.jpg  https://i.pinimg.com/736x/2c/11/24/2c11241893274656887ec6bd19d698ea.jpg
+assets/img/explore/devx-20.jpg  https://i.pinimg.com/736x/0e/d5/ae/0ed5ae6dfe6ff6c27dd886bfb90c8a64.jpg
+assets/img/explore/devx-21.jpg  https://i.pinimg.com/736x/b4/1f/c5/b41fc50cae69bb6a2e88979a213c2a12.jpg

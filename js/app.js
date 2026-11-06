@@ -439,191 +439,216 @@
     </div>`;
   }
 
-  /* ── Exploration: everything we've made, on an endless board ── */
-  // every image and clip from the work, once each: never the stand-ins in assets/img/mock or assets/img/placeholder,
-  // and a clip's still only as its poster. Mixed up so different clients and kinds of work meet, the same for everyone
+  /* ── Exploration: design references, the images alone, three ways to move through them ── */
+  // the images come from assets/img/explore (a Pinterest board of references, see SOURCE.txt there); each is read once
+  // for its colour, which groups the islands and orders the spectrum. Toggled beside Exploration and kept in the address (?board=)
   const SIZES = (window.CMS && window.CMS.sizes) || {};
-  const PIECES = (() => {
-    const seen = new Set(), out = [];
-    const add = (src, ev, kind, poster) => {
-      if (!src || seen.has(src) || /\/img\/(mock|placeholder)\//.test(src)) return;
-      seen.add(src);
-      const C = ev.type === 'case' && CASES[ev.case];
-      const client = C ? C.client : ev.client || '37degree';
-      const [w, h] = SIZES[poster || src] || [4, 3];
-      out.push({ src, ev, kind, poster, client, title: C ? strip(C.title) : workTitle(ev.title, client), ar: w / h });
-    };
-    for (const ev of ALL) {
-      if (ev.type === 'case') {
-        const C = CASES[ev.case];
-        [...(C.stack || []), ...C.blocks.flatMap((b) => b.img || [])].forEach((src) => add(src, ev, 'img'));
-        if (C.video) add(C.video, ev, 'video', C.cover);
-      } else if (ev.type === 'project' || ev.type === 'moment') {
-        const stills = (ev.photos || []).filter((src) => /-still\.jpg$/.test(src));
-        (ev.clips || []).forEach((c) => add(c, ev, 'video', stills.find((x) => x.includes(c.split('/').pop().replace(/\.\w+$/, '-still'))) || stills[0]));
-        (ev.photos || []).filter((src) => !/-still\.jpg$/.test(src)).forEach((src) => add(src, ev, 'img'));
-      }
-    }
-    // a seeded shuffle, then no two pieces of the same work side by side where it can be helped
-    let seed = 37;
-    const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-    for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
-    for (let i = 1; i < out.length - 1; i++) if (out[i].ev === out[i - 1].ev) [out[i], out[i + 1]] = [out[i + 1], out[i]];
-    return out;
-  })();
-
-  // the board, three ways, toggled beside Exploration (?board=): every piece as a polaroid, each project as a little stack of
-  // prints, or each project as one of the site's folders. Every column loops top to bottom on its own and the set repeats
-  // side to side, so there's no edge anywhere
+  const BOARD_SOURCE = 'https://in.pinterest.com/zaryan01/devx_2/';
+  const EXPLORE = Object.keys(SIZES).filter((p) => p.startsWith('assets/img/explore/')).sort()
+    .map((src) => { const [w, h] = SIZES[src]; return { src, ar: w / h, kind: 'img', credit: BOARD_SOURCE }; });
   const board = $('.board');
-  const BOARDS = [['polaroids', 'Polaroids'], ['stacks', 'Stacks'], ['folders', 'Folders']];
-  let boardMode = BOARDS.find(([k]) => k === new URLSearchParams(location.search).get('board')) ? new URLSearchParams(location.search).get('board') : 'polaroids';
-  // a project's pieces together, in the board's mixed order, for the stacks and the folders
-  const GROUPS = (() => {
-    const by = new Map();
-    PIECES.forEach((p, i) => { if (!by.has(p.ev)) by.set(p.ev, []); by.get(p.ev).push(i); });
-    return [...by.values()];
-  })();
-  const itemsFor = () => (boardMode === 'polaroids' ? PIECES.map((p, i) => ({ i })) : GROUPS.map((g) => ({ g })));
-  // the same scatter for everyone: a small seeded random for each slot on the board
+  const BOARDS = [['islands', 'Islands'], ['spectrum', 'Spectrum'], ['deal', 'Deal']];
+  const HINTS = { islands: 'Drag · scroll to zoom', spectrum: 'Drag to drift', deal: 'Click to deal' };
+  const urlBoard = new URLSearchParams(location.search).get('board');
+  let boardMode = BOARDS.some(([k]) => k === urlBoard) ? urlBoard : 'islands';
   const jitter = (n, k) => { const x = Math.sin(n * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
-  const PUSH = ['brand', 'yellow', 'blue', 'pink', 'green'];
-  let cam = { x: -56, y: -28 }, cols = [], boardW = 1, built = '', viewW = innerWidth; // start a little in, so the first column has air on its left
-  const still = (p) => (p.kind === 'video' ? p.poster : p.src); // what a print of a clip shows
-  function itemHTML(it, n, cw) {
-    const r = (jitter(n, 1) - 0.5) * 6.5; // −3.25° to 3.25°
-    const hold = jitter(n, 2) < 0.58 ? `<i class="pin__tape" style="--tr:${((jitter(n, 3) - 0.5) * 14).toFixed(1)}deg"></i>`
-      : `<i class="pin__push pin__push--${PUSH[Math.floor(jitter(n, 4) * PUSH.length)]}"></i>`;
-    if (it.g) {
-      const first = PIECES[it.g[0]], label = `${first.client}: ${strip(first.title)}`;
-      // folders: the project's own folder, as on Stories, its first screens peeking out
-      if (boardMode === 'folders') {
-        const w = Math.min(280, cw);
-        const papers = it.g.map((k) => still(PIECES[k])).filter(Boolean).slice(0, 3);
-        return { h: w / 1.06 + 74, html: `<div class="pin pin--folder" data-group="${n}" style="width:${w}px;--r:${(r * 0.4).toFixed(2)}deg">
-          <button class="card card--folder" aria-label="${label}, ${it.g.length} piece${it.g.length > 1 ? 's' : ''}">${folderHTML({ papers, name: first.client, title: first.title, sub: `${first.client} · ${it.g.length} piece${it.g.length > 1 ? 's' : ''}` })}</button></div>` };
-      }
-      // stacks: up to three prints in a pile, the newest on top; reach for it and they fan out
-      const w = Math.round(cw * (0.8 + jitter(n, 6) * 0.2));
-      const prints = it.g.slice(0, 3).map((k) => still(PIECES[k])).filter(Boolean).reverse();
-      return { h: w * 0.78 + 56, html: `<div class="pin pin--stack" data-group="${n}" style="width:${w}px;--r:${r.toFixed(2)}deg">
-        <button class="pstack" aria-label="${label}, ${it.g.length} piece${it.g.length > 1 ? 's' : ''}">${prints.map((src) => `<img src="${src}" alt="" loading="lazy" decoding="async">`).join('')}
-          ${it.g.length > 1 ? `<span class="pstack__n">${it.g.length}</span>` : ''}</button>
-        <span class="pin__label"><b>${first.client}</b><i>${first.title}</i></span>
-        <i class="pin__push pin__push--${PUSH[n % PUSH.length]}"></i></div>` };
-    }
-    // polaroids: every piece in a white frame with its client written under it
-    const p = PIECES[it.i];
-    const w = Math.round(cw * (0.74 + jitter(n, 6) * 0.26));
-    const media = p.kind === 'video'
-      ? `<video src="${p.src}"${p.poster ? ` poster="${p.poster}"` : ''} muted loop playsinline preload="none"></video>`
-      : `<img src="${p.src}" alt="" loading="lazy" decoding="async">`;
-    return {
-      h: (w - 20) / p.ar + 52,
-      html: `<div class="pin pin--polaroid" data-pin="${it.i}" style="width:${w}px;--r:${r.toFixed(2)}deg">
-        <button class="pin__m" style="aspect-ratio:${p.ar.toFixed(3)}" aria-label="${p.client}: ${strip(p.title)}">${media}
-          <span class="pin__tag">${clientAvatar(p.client)}<span class="pin__who"><b>${p.client}</b><i>${p.title}</i></span></span></button>
-        <span class="pin__note">${p.client}</span>${hold}
-      </div>`,
-    };
-  }
-  // the toggle beside Exploration: switching redraws the board where you are
-  const modesEl = Object.assign(document.createElement('div'), { className: 'board-modes', hidden: true });
-  modesEl.setAttribute('role', 'radiogroup');
-  modesEl.setAttribute('aria-label', 'Show the board as');
-  modesEl.innerHTML = BOARDS.map(([k, label]) => `<button role="radio" data-board="${k}">${label}</button>`).join('');
-  const syncModes = () => {
-    modesEl.hidden = view !== 'explore';
-    $$('[data-board]', modesEl).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.board === boardMode)));
-  };
-  modesEl.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-board]');
-    if (!b || b.dataset.board === boardMode) return;
-    boardMode = b.dataset.board;
-    const q = new URLSearchParams(location.search);
-    if (boardMode === 'polaroids') q.delete('board'); else q.set('board', boardMode);
-    history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
-    syncModes();
-    built = '';
-    buildBoard();
-  });
-  const pinClips = new IntersectionObserver((entries) => entries.forEach(({ target, isIntersecting }) => {
-    if (isIntersecting && !reduced.matches) target.play().catch(() => {}); else target.pause();
-  }), { root: board, threshold: 0.25 });
-  function buildBoard() {
-    const vw = board.clientWidth || innerWidth, vh = board.clientHeight || innerHeight;
-    viewW = vw; // measured here once, so moving the board never has to read its size
-    const cw = mq.matches ? 168 : 290, gapX = mq.matches ? 28 : 72, step = cw + gapX;
-    const key = `${boardMode}:${cw}:${vw}:${vh}`;
-    if (key === built) return applyCam();
-    built = key;
-    // enough columns that one column never shows twice across the screen
-    const n = Math.max(mq.matches ? 4 : 8, Math.ceil((vw + step) / step) + 1);
-    const heights = Array(n).fill(0), runs = [...Array(n)].map(() => []);
-    itemsFor().forEach((it, k) => {
-      const c = heights.indexOf(Math.min(...heights));
-      const { h, html } = itemHTML(it, k, cw);
-      // uneven air above each piece, and a nudge off the column's centre
-      const top = Math.round((mq.matches ? 30 : 46) + jitter(k, 7) * (mq.matches ? 26 : 54));
-      const w = Number(html.match(/width:(\d+)px/)[1]);
-      const left = Math.round((cw - w) * jitter(k, 8));
-      runs[c].push(html.replace('style="width:', `style="margin:${top}px 0 0 ${left}px;width:`));
-      heights[c] += top + h;
-    });
-    boardW = n * step;
-    pinClips.disconnect();
-    board.innerHTML = runs.map((run, c) => {
-      // a column repeats its run as often as it takes to cover the screen and one run more, so the loop never shows its seam
-      const copies = Math.max(2, Math.ceil(vh / Math.max(heights[c], 1)) + 1);
-      return `<div class="board__col" style="width:${cw}px">${Array(copies).fill(`<div class="board__run">${run.join('')}</div>`).join('')}</div>`;
-    }).join('');
-    cols = $$('.board__col', board).map((el, c) => ({ el, x: c * step, h: heights[c], off: (c * 211) % Math.max(heights[c], 1) }));
-    $$('video', board).forEach((v) => pinClips.observe(v));
-    applyCam();
-  }
   const wrap = (v, m) => ((v % m) + m) % m;
-  const DOT = 26; // the grid behind the pins moves with them, so it reads as the board itself
-  function applyCam() {
-    const vw = viewW, step = cols.length ? boardW / cols.length : 1;
-    board.style.backgroundPosition = `${-wrap(cam.x, DOT)}px ${-wrap(cam.y, DOT)}px`;
-    cols.forEach((c) => {
-      const x = wrap(c.x - cam.x + step, boardW) - step;
-      const shown = x < vw;
-      c.el.style.visibility = shown ? '' : 'hidden';
-      if (shown) c.el.style.transform = `translate3d(${x}px, ${-wrap(cam.y + c.off, c.h)}px, 0)`;
+
+  // each image's average colour, from a tiny copy of it
+  let colours = null;
+  async function readColours() {
+    if (colours) return colours;
+    const c = document.createElement('canvas'); c.width = c.height = 16;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    colours = await Promise.all(EXPLORE.map(async (p) => {
+      const im = new Image(); im.src = p.src;
+      try { await im.decode(); } catch (_) { return { h: 0, s: 0, l: 0.5, rgb: [128, 128, 128] }; }
+      g.drawImage(im, 0, 0, 16, 16);
+      const d = g.getImageData(0, 0, 16, 16).data;
+      let r = 0, gg = 0, b = 0;
+      for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; }
+      const n = d.length / 4; r /= n; gg /= n; b /= n;
+      const mx = Math.max(r, gg, b) / 255, mn = Math.min(r, gg, b) / 255, l = (mx + mn) / 2, dd = mx - mn;
+      const s = dd ? dd / (1 - Math.abs(2 * l - 1)) : 0;
+      let h = 0;
+      if (dd) { const R = r / 255, G = gg / 255, B = b / 255; h = mx === R ? ((G - B) / dd) % 6 : mx === G ? (B - R) / dd + 2 : (R - G) / dd + 4; h = wrap(h * 60, 360); }
+      return { h, s, l, rgb: [r, gg, b].map(Math.round) };
+    }));
+    return colours;
+  }
+
+  // a world of placed images, {x, y, w, idx}, that repeats every tileW × tileH; only the copies on screen are drawn
+  let world = null, cam = { x: 0, y: 0, z: 1 }, viewW = innerWidth, viewH = innerHeight, layer = null;
+  const drawn = new Map();
+  function layoutIslands(col) {
+    // three islands by tone: the dark work, the light work, the colourful work
+    const tone = (c) => (c.l < 0.32 ? 0 : c.s > 0.22 && c.l < 0.8 ? 2 : 1);
+    const groups = [[], [], []];
+    EXPLORE.forEach((p, i) => groups[tone(col[i])].push(i));
+    const items = [];
+    const centres = [[0, 0], [1700, 620], [700, 1550]];
+    groups.filter((g) => g.length).forEach((g, k) => {
+      const per = Math.ceil(Math.sqrt(g.length * 1.3));
+      g.forEach((idx, n) => {
+        const w = 250 + jitter(idx, 1) * 120;
+        const cx = centres[k][0] + (n % per) * 430 + (Math.floor(n / per) % 2) * 200 + (jitter(idx, 2) - 0.5) * 80;
+        const cy = centres[k][1] + Math.floor(n / per) * 400 + (jitter(idx, 3) - 0.5) * 90;
+        items.push({ x: cx, y: cy, w, idx });
+      });
     });
+    return { items, tileW: 3600, tileH: 3200, wrapY: true };
   }
-  // the pins swing from their tape as the board moves, the way paper does, and settle when it stops
-  let swayIdle = 0, swayAt = 0;
-  function sway(vx) {
-    if (reduced.matches) return;
-    // every pin inherits it, so it's only rewritten when the angle moves by a visible step; the pins' own easing fills in
-    const deg = Math.round(clamp(vx * 2.4, -5, 5) * 2) / 2;
-    if (deg !== swayAt) { swayAt = deg; board.style.setProperty('--sway', `${deg}deg`); }
-    clearTimeout(swayIdle);
-    swayIdle = setTimeout(() => { swayAt = 0; board.style.setProperty('--sway', '0deg'); }, 90);
+  function layoutSpectrum(col) {
+    // darks, then the colours by hue, then lights: one long gradient, drifting sideways and looping
+    const key = (i) => { const c = col[i]; return c.s < 0.15 ? (c.l < 0.5 ? -1 + c.l : 400 + c.l) : c.h; };
+    const order = EXPLORE.map((p, i) => i).sort((a, b) => key(a) - key(b));
+    let x = 0;
+    const items = order.map((idx, n) => {
+      const w = 280 + jitter(idx, 1) * 140, h = w / EXPLORE[idx].ar;
+      const it = { x, y: Math.sin(n * 0.9) * 120 - h / 2 + (jitter(idx, 2) - 0.5) * 60, w, idx };
+      x += w + 150 + jitter(idx, 3) * 70;
+      return it;
+    });
+    return { items, tileW: x, tileH: 0, wrapY: false };
   }
-  // drag it any way, with a little glide when you let go; the wheel and trackpad move it too
+  function drawWorld() {
+    if (!world) return;
+    const { items, tileW, tileH, wrapY } = world, z = cam.z;
+    const x0 = cam.x - viewW / 2 / z, x1 = cam.x + viewW / 2 / z, y0 = cam.y - viewH / 2 / z, y1 = cam.y + viewH / 2 / z;
+    const seen = new Set();
+    for (const it of items) {
+      const p = EXPLORE[it.idx], h = it.w / p.ar;
+      const i0 = Math.floor((x0 - it.x - it.w) / tileW) + 1, i1 = Math.floor((x1 - it.x) / tileW);
+      const j0 = wrapY ? Math.floor((y0 - it.y - h) / tileH) + 1 : 0, j1 = wrapY ? Math.floor((y1 - it.y) / tileH) : 0;
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const wx = it.x + i * tileW, wy = it.y + j * tileH;
+        if (!wrapY && (wy + h < y0 || wy > y1)) continue;
+        const key = `${it.idx}:${i}:${j}`;
+        seen.add(key);
+        let el = drawn.get(key);
+        if (!el) {
+          el = document.createElement('button');
+          el.className = 'ex';
+          el.dataset.ex = it.idx;
+          el.setAttribute('aria-label', 'Design reference');
+          el.style.width = `${it.w}px`;
+          el.style.height = `${h}px`;
+          el.innerHTML = `<img src="${p.src}" alt="" draggable="false" decoding="async">`;
+          layer.append(el);
+          drawn.set(key, el);
+        }
+        el.style.transform = `translate3d(${(wx - cam.x) * z + viewW / 2}px, ${(wy - cam.y) * z + viewH / 2}px, 0) scale(${z})`;
+      }
+    }
+    for (const [key, el] of drawn) if (!seen.has(key)) { el.remove(); drawn.delete(key); }
+    // the grid moves and zooms with the board, so it reads as the surface; zoomed far out it doubles up rather than crowd
+    const D = 26 * z * (z < 0.5 ? 2 : 1);
+    board.style.backgroundSize = `${D}px ${D}px`;
+    board.style.backgroundPosition = `${wrap(-cam.x * z + viewW / 2, D)}px ${wrap(-cam.y * z + viewH / 2, D)}px`;
+    if (boardMode === 'spectrum') tintRoom();
+  }
+  // in the spectrum the room takes on, faintly, the colour of what's in the middle of it
+  let tintAt = -1;
+  function tintRoom() {
+    const { items, tileW } = world;
+    let best = null, bd = Infinity;
+    for (const it of items) { const d = Math.abs(wrap(it.x + it.w / 2 - cam.x + tileW / 2, tileW) - tileW / 2); if (d < bd) { bd = d; best = it; } }
+    if (!best || best.idx === tintAt) return;
+    tintAt = best.idx;
+    const [r, g, b] = colours[best.idx].rgb;
+    board.style.setProperty('--room', `rgb(${r} ${g} ${b})`);
+  }
+
+  // deal: one image at a time onto an empty table; the older ones shrink back and drift to the edges
+  let dealt = [], dealNext = 0;
+  function deal() {
+    const idx = dealNext % EXPLORE.length;
+    dealNext++;
+    const p = EXPLORE[idx];
+    const fit = Math.min(viewW * (mq.matches ? 0.78 : 0.42), (viewH - 160) * 0.7 * p.ar);
+    const el = document.createElement('button');
+    el.className = 'ex ex--card';
+    el.dataset.ex = idx;
+    el.setAttribute('aria-label', 'Design reference: view it big');
+    el.style.width = `${fit}px`;
+    el.style.height = `${fit / p.ar}px`;
+    el.innerHTML = `<img src="${p.src}" alt="" draggable="false">`;
+    layer.append(el);
+    const r = (jitter(dealNext, 1) - 0.5) * 8;
+    el.style.setProperty('--x', `${viewW / 2 - fit / 2}px`);
+    el.style.setProperty('--y', `${viewH / 2 - fit / p.ar / 2 - 30}px`);
+    el.style.setProperty('--r', `${r}deg`);
+    el.style.setProperty('--s', '1');
+    dealt.unshift({ el, a: jitter(dealNext, 2) * Math.PI * 2, fit, ar: p.ar });
+    dealt.forEach((d, age) => {
+      if (!age) return;
+      // pushed out along its own direction, smaller with every deal, gone after eight
+      const s = Math.pow(0.74, age), dist = Math.min(viewW, viewH) * (0.36 + age * 0.08);
+      const x = viewW / 2 + Math.cos(d.a) * dist * 1.4 - (d.fit * s) / 2, y = viewH / 2 - 30 + Math.sin(d.a) * dist - (d.fit / d.ar * s) / 2;
+      d.el.style.setProperty('--x', `${x - (d.fit - d.fit * s) / 2}px`);
+      d.el.style.setProperty('--y', `${y - (d.fit / d.ar - d.fit / d.ar * s) / 2}px`);
+      d.el.style.setProperty('--s', s.toFixed(3));
+      d.el.classList.toggle('is-old', age > 0);
+      if (age > 7) d.el.classList.add('is-gone');
+    });
+    dealt.filter((d, age) => age > 8).forEach((d) => d.el.remove());
+    dealt = dealt.slice(0, 9);
+  }
+
+  async function buildBoard() {
+    viewW = board.clientWidth || innerWidth;
+    viewH = board.clientHeight || innerHeight;
+    board.dataset.mode = boardMode;
+    $('.dyn-hint').textContent = HINTS[boardMode];
+    board.innerHTML = '<div class="board__layer"></div>';
+    layer = $('.board__layer', board);
+    drawn.clear(); dealt = []; tintAt = -1;
+    if (boardMode === 'deal') { dealNext = 0; deal(); return; }
+    const col = await readColours();
+    if (view !== 'explore') return;
+    world = boardMode === 'islands' ? layoutIslands(col) : layoutSpectrum(col);
+    cam = boardMode === 'islands' ? { x: 650, y: 380, z: mq.matches ? 0.42 : 0.62 } : { x: viewW / 2 - 80, y: 0, z: mq.matches ? 0.7 : 1 };
+    drawWorld();
+  }
+
+  // moving: drag any way with a glide, the wheel pans (and in Islands zooms), two fingers pinch
   let pan = null, glide = 0, panMoved = false;
-  const moveBy = (dx, dy) => { cam.x += dx; cam.y += dy; applyCam(); };
+  const pointers = new Map();
+  const zoomAt = (sx, sy, z) => {
+    z = clamp(z, mq.matches ? 0.22 : 0.3, 1.6);
+    const wx = cam.x + (sx - viewW / 2) / cam.z, wy = cam.y + (sy - viewH / 2) / cam.z;
+    cam = { x: wx - (sx - viewW / 2) / z, y: wy - (sy - viewH / 2) / z, z };
+    drawWorld();
+  };
+  const moveBy = (dx, dy) => { cam.x += dx / cam.z; cam.y += boardMode === 'spectrum' ? 0 : dy / cam.z; drawWorld(); };
   board.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || boardMode === 'deal') return;
     cancelAnimationFrame(glide);
-    pan = { x: e.clientX, y: e.clientY, t: performance.now(), vx: 0, vy: 0 };
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    pan = { x: e.clientX, y: e.clientY, t: performance.now(), vx: 0, vy: 0, d: 0 };
     panMoved = false;
   });
   addEventListener('pointermove', (e) => {
-    if (!pan) return;
-    const dx = e.clientX - pan.x, dy = e.clientY - pan.y, now = performance.now(), dt = Math.max(1, now - pan.t);
-    if (!panMoved && Math.hypot(dx, dy) > 5) { panMoved = true; try { board.setPointerCapture(e.pointerId); } catch (_) {} board.classList.add('is-panning'); }
+    if (!pan || !pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2 && boardMode === 'islands') {
+      // pinch: the zoom follows the fingers' spread, around the point between them
+      const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      const r = board.getBoundingClientRect();
+      if (pan.d) zoomAt((a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top, cam.z * (d / pan.d));
+      pan.d = d; panMoved = true;
+      return;
+    }
+    const dx = e.clientX - prev.x, dy = e.clientY - prev.y, now = performance.now(), dt = Math.max(1, now - pan.t);
+    if (!panMoved && Math.hypot(e.clientX - pan.x, e.clientY - pan.y) > 5) { panMoved = true; board.classList.add('is-panning'); }
     if (!panMoved) return;
-    pan.vx = -dx / dt; pan.vy = -dy / dt;
-    pan.x = e.clientX; pan.y = e.clientY; pan.t = now;
+    pan.vx = -dx / dt; pan.vy = -dy / dt; pan.t = now;
     moveBy(-dx, -dy);
-    sway(dx / dt);
   });
-  addEventListener('pointerup', () => {
-    if (!pan) return;
+  const release = (e) => {
+    pointers.delete(e.pointerId);
+    if (!pan || pointers.size) return;
     const { vx, vy } = pan;
     pan = null;
     board.classList.remove('is-panning');
@@ -634,26 +659,48 @@
       v = { x: v.x * 0.92, y: v.y * 0.92 };
       if (Math.hypot(v.x, v.y) < 0.4) return;
       moveBy(v.x, v.y);
-      sway(-v.x / 16);
       glide = requestAnimationFrame(tick);
     };
     glide = requestAnimationFrame(tick);
-  });
+  };
+  addEventListener('pointerup', release);
+  addEventListener('pointercancel', release);
   board.addEventListener('wheel', (e) => {
-    if (e.ctrlKey) return;
+    if (boardMode === 'deal') return;
     e.preventDefault();
-    const k = e.deltaMode === 1 ? 32 : 1;
-    // a plain mouse wheel only scrolls one way; holding shift turns it sideways
-    e.shiftKey && !e.deltaX ? moveBy(e.deltaY * k, 0) : moveBy(e.deltaX * k, e.deltaY * k);
-    sway(-(e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * k / 24);
+    const k = e.deltaMode === 1 ? 32 : 1, r = board.getBoundingClientRect();
+    // islands: the wheel (or a trackpad pinch) zooms around the pointer; a sideways swipe still pans
+    if (boardMode === 'islands' && (e.ctrlKey || Math.abs(e.deltaY) > Math.abs(e.deltaX))) return zoomAt(e.clientX - r.left, e.clientY - r.top, cam.z * Math.exp(-e.deltaY * k * (e.ctrlKey ? 0.01 : 0.0015)));
+    moveBy((e.deltaX || (boardMode === 'spectrum' ? e.deltaY : 0)) * k, boardMode === 'spectrum' ? 0 : e.deltaY * k);
   }, { passive: false });
   board.addEventListener('keydown', (e) => {
+    if (viewing) return;
+    if (boardMode === 'deal' && [' ', 'Enter', 'ArrowRight'].includes(e.key)) { e.preventDefault(); return deal(); }
     const by = { ArrowRight: [160, 0], ArrowLeft: [-160, 0], ArrowDown: [0, 160], ArrowUp: [0, -160] }[e.key];
-    if (!by || viewing) return;
-    e.preventDefault();
-    moveBy(...by);
+    if (by && boardMode !== 'deal') { e.preventDefault(); moveBy(...by); }
+    if (boardMode === 'islands' && (e.key === '+' || e.key === '=' || e.key === '-')) zoomAt(viewW / 2, viewH / 2, cam.z * (e.key === '-' ? 0.8 : 1.25));
   });
   addEventListener('resize', () => { if (view === 'explore') buildBoard(); });
+
+  // the toggle beside Exploration: switching redraws the board
+  const modesEl = Object.assign(document.createElement('div'), { className: 'board-modes', hidden: true });
+  modesEl.setAttribute('role', 'radiogroup');
+  modesEl.setAttribute('aria-label', 'Explore as');
+  modesEl.innerHTML = BOARDS.map(([k, label]) => `<button role="radio" data-board="${k}">${label}</button>`).join('');
+  const syncModes = () => {
+    modesEl.hidden = view !== 'explore';
+    $$('[data-board]', modesEl).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.board === boardMode)));
+  };
+  modesEl.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-board]');
+    if (!b || b.dataset.board === boardMode) return;
+    boardMode = b.dataset.board;
+    const q = new URLSearchParams(location.search);
+    if (boardMode === 'islands') q.delete('board'); else q.set('board', boardMode);
+    history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
+    syncModes();
+    buildBoard();
+  });
 
   /* ── Render ───────────────────────────────────────── */
   function render() {
@@ -1428,7 +1475,10 @@
     const cap = $('.viewer__cap', viewer);
     cap.hidden = !piece;
     if (piece) {
-      cap.innerHTML = `${clientAvatar(piece.client)}<span class="viewer__who"><b>${piece.client}</b><i>${piece.title}</i></span><button class="viewer__go" data-go="${piece.ev.id}">View project ${icon.arrow}</button>`;
+      // a reference is someone else's work: it says where it's from instead of whose project it is
+      cap.innerHTML = piece.credit
+        ? `<a class="viewer__credit" href="${piece.credit}" target="_blank" rel="noopener">via Pinterest ↗</a>`
+        : `${clientAvatar(piece.client)}<span class="viewer__who"><b>${piece.client}</b><i>${piece.title}</i></span><button class="viewer__go" data-go="${piece.ev.id}">View project ${icon.arrow}</button>`;
       Object.assign(cap.style, { left: `${to.left}px`, top: `${to.top + h + 16}px`, width: `${w}px` });
     }
     const had = viewing.shown;
@@ -1475,9 +1525,8 @@
   });
   // a piece from the board opens with every piece on it to browse
   // from a stack or a folder, only that project's pieces are there to browse
-  function openPiece(i, fromEl, only) {
-    const items = only ? only.map((k) => PIECES[k]) : PIECES;
-    if (only) i = 0;
+  function openPiece(i, fromEl) {
+    const items = EXPLORE;
     viewing = { list: items.map((p) => p.src), items, i: 0, shown: false };
     viewer.style.width = `${innerWidth}px`;
     viewer.classList.add('is-full');
@@ -1690,10 +1739,10 @@
     }
     if (viewing && t.closest('.viewer__cap')) return;
     if (viewing && t.closest('.viewer')) return closeViewer();
-    const pin = t.closest('.pin[data-pin]');
-    if (pin) return panMoved ? undefined : openPiece(Number(pin.dataset.pin), $('img, video', pin));
-    const group = t.closest('.pin[data-group]');
-    if (group) return panMoved ? undefined : openPiece(0, $('img', group), GROUPS[Number(group.dataset.group)]);
+    // the board: a piece opens big; in Deal, the newest opens and anywhere else deals the next
+    const ex = t.closest('.board .ex');
+    if (boardMode === 'deal' && view === 'explore' && t.closest('.board') && !viewing && (!ex || ex !== (dealt[0] && dealt[0].el))) return deal();
+    if (ex) return panMoved ? undefined : openPiece(Number(ex.dataset.ex), $('img', ex));
     const pic = open && open.kind === 'sheet' && !t.closest('.pp-next') && t.closest('.paper img');
     if (pic) return openViewer(pic.getAttribute('src'), pic);
     // "Work with us" opens the new-event invite; the mailto stays as the fallback

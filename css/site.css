@@ -1137,97 +1137,37 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
   .ag-wall .wk__fig b { font-size: 19px; }
 }
 
-/* ── Exploration: everything we've made, pinned to a board that never ends ── */
+/* ── Exploration: design references, the images alone, on a dotted table that never ends ── */
 .board {
   --dot: color-mix(in srgb, var(--ink) 15%, transparent);
+  --room: transparent;
   position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; user-select: none; outline: none;
-  /* a quiet dotted grid, the surface the work is pinned to; it moves as you drag */
-  background: var(--paper) radial-gradient(circle, var(--dot) 1px, transparent 1.5px) 0 0 / 26px 26px;
+  background: radial-gradient(circle, var(--dot) 1px, transparent 1.5px) 0 0 / 26px 26px, var(--paper);
 }
 .board[hidden] { display: none; }
 .board.is-panning { cursor: grabbing; }
-.board.is-panning .pin { pointer-events: none; }
+.board.is-panning .ex { pointer-events: none; }
 body[data-showing="explore"] .timeline, body[data-showing="explore"] .agenda, body[data-showing="explore"] .side { display: none; }
-.board__col { position: absolute; top: 0; left: 0; will-change: transform; }
-.board__run { display: flow-root; padding-top: 1px; }
-
-/* a pin: a piece of the work, a little askew, hanging from its tape or pin and swinging as the board moves */
-.pin {
-  position: relative; display: block;
-  transform: rotate(calc(var(--r, 0deg) + var(--sway, 0deg)));
-  transform-origin: 50% 0;
-  transition: transform .7s var(--spring), filter .3s;
-  animation: pin-in .6s var(--spring) both;
+/* in the spectrum the room takes on, faintly, the colour of what's in the middle */
+.board[data-mode="spectrum"]::before { content: ''; position: absolute; inset: 0; background: radial-gradient(60% 70% at 50% 50%, color-mix(in srgb, var(--room) 22%, transparent), transparent 75%); transition: background 1.2s var(--ease); pointer-events: none; }
+.board__layer { position: absolute; inset: 0; }
+/* an image: nothing around it but a soft corner and a soft shadow */
+.ex { position: absolute; top: 0; left: 0; display: block; padding: 0; transform-origin: 0 0; border-radius: 10px; overflow: hidden; background: color-mix(in srgb, var(--ink) 6%, var(--paper)); box-shadow: 0 1px 2px rgba(18, 18, 18, .08), 0 16px 40px -22px rgba(18, 18, 18, .45); cursor: zoom-in; }
+.ex img { display: block; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; transition: transform .6s var(--ease); }
+.ex:hover img { transform: scale(1.03); }
+/* deal: each card lands on the table, then shrinks back and drifts out as the next one comes */
+.board[data-mode="deal"] { cursor: pointer; }
+.ex--card {
+  transform: translate3d(var(--x), var(--y), 0) rotate(var(--r)) scale(var(--s));
+  transform-origin: 50% 50%;
+  transition: transform .8s var(--spring), opacity .6s, filter .6s;
+  animation: deal-in .7s var(--spring) both;
+  box-shadow: 0 2px 6px rgba(18, 18, 18, .12), 0 30px 70px -30px rgba(18, 18, 18, .6);
 }
-@keyframes pin-in { from { opacity: 0; transform: translateY(-10px) rotate(calc(var(--r, 0deg) * 2)) scale(1.04); } }
-.pin__m {
-  position: relative; display: block; width: 100%; overflow: hidden; border-radius: 12px;
-  background: color-mix(in srgb, var(--ink) 5%, var(--paper-2));
-  box-shadow: 0 1px 2px rgba(18, 18, 18, .10), 0 14px 30px -14px rgba(18, 18, 18, .42);
-  transition: box-shadow .3s;
-}
-.pin__m::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 7%, transparent); pointer-events: none; }
-.pin__m img, .pin__m video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; }
-/* reach for one and it straightens, comes forward and lifts off the board */
-.pin:hover, .pin:focus-within { z-index: 3; transform: rotate(0deg) translateY(-6px) scale(1.04); transition: transform .45s var(--spring); }
-.pin:hover .pin__m { box-shadow: 0 2px 6px rgba(18, 18, 18, .12), 0 30px 60px -20px rgba(18, 18, 18, .55); }
-
-/* a strip of tape across the top edge: paper you can half see through */
-.pin__tape {
-  position: absolute; z-index: 2; top: -11px; left: 50%; width: 76px; height: 22px; margin-left: -38px;
-  transform: rotate(var(--tr, 0deg));
-  background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 255, 255, .08) 6px 7px), color-mix(in srgb, #F3EEDC 62%, transparent);
-  box-shadow: 0 1px 2px rgba(18, 18, 18, .16);
-  clip-path: polygon(0 8%, 4% 0, 8% 10%, 12% 0, 100% 0, 100% 92%, 96% 100%, 92% 90%, 88% 100%, 0 100%);
-}
-/* or a push-pin, in the notes' colours and the studio's orange */
-.pin__push {
-  position: absolute; z-index: 2; top: -7px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .75) 0 18%, transparent 22%), var(--pc);
-  box-shadow: inset 0 -2px 3px rgba(0, 0, 0, .25), 2px 4px 5px -1px rgba(18, 18, 18, .38);
-}
-.pin__push--brand { --pc: var(--brand); }
-.pin__push--yellow { --pc: #E9B90F; }
-.pin__push--blue { --pc: #4C86D9; }
-.pin__push--pink { --pc: #E0559A; }
-.pin__push--green { --pc: #34A35F; }
-
-/* a polaroid: the work in a white frame, the client written underneath */
-.pin--polaroid { padding: 10px 10px 0; border-radius: 4px; background: #FBF9F4; box-shadow: 0 1px 2px rgba(18, 18, 18, .12), 0 16px 32px -14px rgba(18, 18, 18, .45); }
-.pin--polaroid .pin__m { border-radius: 2px; box-shadow: none; }
-.pin--polaroid:hover .pin__m { box-shadow: none; }
-.pin__note { display: block; height: 42px; padding-top: 8px; text-align: center; font: italic 400 19px/1 var(--font-accent); color: #2A2724; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* a sticky note from Stories, pinned between the work */
-.pin--note .card { width: 100%; min-height: 0; aspect-ratio: 1 / var(--tall, .95); margin: 0; overflow: hidden; box-shadow: 0 1px 2px rgba(18, 18, 18, .08), 0 14px 26px -16px rgba(18, 18, 18, .4); }
-.pin--note .card:hover { transform: none; }
-
-/* whose it is, on a strip of frosted glass that rises in on hover */
-.pin__tag {
-  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 1;
-  display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border-radius: 12px;
-  background: color-mix(in srgb, var(--paper-2) 82%, transparent);
-  opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .3s var(--ease);
-  text-align: left; pointer-events: none;
-}
-/* the frosted glass costs a blur, so it's only there while the label shows */
-.pin:hover .pin__tag, .pin:focus-within .pin__tag { opacity: 1; transform: none; -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); }
-.pin__tag .fold__av { width: 24px; height: 24px; flex: none; font-size: 10px; color: var(--paper-2); background: var(--ink); box-shadow: none; }
-.pin__tag .fold__mk { height: 11px; width: calc(11px * var(--mk)); }
-.pin__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pin__tag b { font: 500 12px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pin__tag i { font: 400 11px/1.25 var(--font-sans); font-style: normal; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pin__tag i em { font-family: inherit; font-style: inherit; }
-:root[data-theme="dark"] .pin__tape { background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 255, 255, .05) 6px 7px), rgba(236, 228, 205, .30); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .pin__tape { background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 255, 255, .05) 6px 7px), rgba(236, 228, 205, .30); }
-}
-@media (prefers-reduced-motion: reduce) { .pin { animation: none; transition: none; } }
-@media (max-width: 760px) {
-  .pin__tape { width: 54px; margin-left: -27px; height: 18px; top: -9px; }
-  .pin--polaroid { padding: 7px 7px 0; }
-  .pin__note { height: 32px; padding-top: 6px; font-size: 15px; }
-}
+.ex--card.is-old { cursor: pointer; filter: saturate(.85); }
+.ex--card.is-gone { opacity: 0; }
+@keyframes deal-in { from { transform: translate3d(var(--x), calc(var(--y) + 70vh), 0) rotate(calc(var(--r) * -3)) scale(.9); } }
+@media (prefers-reduced-motion: reduce) { .ex--card { transition: none; animation: none; } .ex img { transition: none; } }
 
 /* the bar on the board: the views, a hint, and Work with us, since no sidebar holds it here */
 .dyn-hint { display: none; padding: 0 10px 0 6px; font: 400 13px/1 var(--font-sans); color: var(--muted); white-space: nowrap; }
@@ -1264,7 +1204,7 @@ body[data-showing="explore"] .minimap, body[data-showing="explore"] .dyn-step { 
   .viewer__go { width: 100%; justify-content: center; }
 }
 
-/* ── The board's three ways: the toggle beside Exploration, the print stacks, the folders ── */
+/* ── The toggle beside Exploration ── */
 .board-modes { display: flex; align-items: center; gap: 2px; margin: 0 2px 0 4px; padding: 3px; border-radius: var(--r-pill); background: var(--paper); box-shadow: inset 0 0 0 1px var(--line-2); animation: pop .35s var(--spring); }
 .board-modes[hidden] { display: none; }
 .board-modes button { padding: 6px 10px; border-radius: var(--r-pill); font: 500 12.5px/1 var(--font-sans); color: var(--muted); white-space: nowrap; transition: color .2s, background .2s; }
@@ -1275,32 +1215,5 @@ body[data-showing="explore"] .minimap, body[data-showing="explore"] .dyn-step { 
   /* fixed inside the bar (which is transformed), so it centres on the whole bar rather than the view buttons */
   .board-modes { position: fixed; left: 50%; bottom: calc(100% + 14px); translate: -50% 0; margin: 0; background: var(--paper-2); box-shadow: 0 0 0 1px var(--line-2), 0 6px 20px rgba(18, 18, 18, .12); }
 }
-
-/* stacks: a project's prints in a little pile, white-bordered like the photos on Stories' cards */
-.pstack { position: relative; display: block; width: 100%; aspect-ratio: 1 / .78; }
-.pstack img {
-  position: absolute; inset: 7% 9%; width: 82%; height: 86%; object-fit: cover; object-position: top;
-  border: 5px solid #FBF9F4; border-radius: 6px; background: #FBF9F4;
-  box-shadow: 0 1px 2px rgba(18, 18, 18, .12), 0 12px 26px -12px rgba(18, 18, 18, .45);
-  transition: transform .5s var(--spring);
-}
-.pstack img:nth-last-child(3) { transform: rotate(-7deg) translate(-4%, 2%); }
-.pstack img:nth-last-child(2) { transform: rotate(5deg) translate(4%, 1%); }
-.pin--stack:hover .pstack img:nth-last-child(3) { transform: rotate(-13deg) translate(-22%, -4%); }
-.pin--stack:hover .pstack img:nth-last-child(2) { transform: rotate(11deg) translate(22%, -5%); }
-.pin--stack:hover .pstack img:last-of-type { transform: translateY(-6%) scale(1.03); }
-.pstack__n { position: absolute; z-index: 1; right: 4%; bottom: 2%; min-width: 24px; height: 24px; padding: 0 7px; display: grid; place-items: center; border-radius: var(--r-pill); background: var(--ink); color: var(--paper-2); font: 600 11px/1 var(--font-sans); box-shadow: 0 4px 10px rgba(18, 18, 18, .3); }
-.pin--stack .pin__push { top: 2%; }
-.pin__label { display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 10px; text-align: center; }
-.pin__label b { font: 500 13px/1.2 var(--font-sans); color: var(--ink); }
-.pin__label i { font: 400 12px/1.3 var(--font-sans); font-style: normal; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pin__label i em { font-family: var(--font-accent); font-style: italic; }
-
-/* folders: the site's own, a step smaller so they sit on the board with room around them */
-.pin--folder .card.card--folder { --fold-w: 100%; width: 100%; margin: 0; }
-.pin--folder:hover, .pin--stack:hover { transform: rotate(0deg) translateY(-4px); }
-@media (max-width: 760px) {
-  .pstack img { border-width: 3px; }
-  .pin__label b { font-size: 12px; }
-  .pin__label i { font-size: 11px; }
-}
+.viewer__credit { margin-left: auto; padding: 8px 14px; border-radius: var(--r-pill); font: 500 13px/1 var(--font-sans); color: rgba(255, 255, 255, .85); text-decoration: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25); transition: background .2s, color .2s; }
+.viewer__credit:hover { background: #fff; color: #121212; }
