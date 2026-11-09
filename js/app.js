@@ -892,6 +892,7 @@
     const on = $(`[data-view="${view}"]`, seg);
     if (on && on.offsetWidth) { ind.style.left = `${on.offsetLeft}px`; ind.style.width = `${on.offsetWidth}px`; }
     anchorBar();
+    syncCtaAway();
   }
   // the view buttons hold still: whatever else the bar shows or hides runs off to their right, and they move only when
   // the sidebar goes, to stay centred on the work. The owner pill centres there on its own
@@ -906,7 +907,8 @@
   addEventListener('resize', anchorBar);
   function setView(v) {
     if (v === view) return;
-    // Stories runs by date and Projects by what leads, so there is no shared place to keep: start each at its beginning
+    // on phones Story and Projects share one scrolling list: each keeps its own place, so scrolling one never moves the other
+    agendaAt[view] = agenda.scrollTop;
     view = v;
     // the address carries the view, so a refresh or a shared link lands on it
     const q = new URLSearchParams(location.search);
@@ -915,7 +917,9 @@
     showSide();
     render();
     timeline.scrollLeft = 0;
+    agenda.scrollTop = agendaAt[v] || 0;
   }
+  const agendaAt = {};
   function zoom(dir) {
     const i = clamp(VIEWS.indexOf(view) - dir, 0, VIEWS.length - 1);
     setView(VIEWS[i]);
@@ -935,6 +939,12 @@
     const para = $(mq.matches ? '.ag-intro p' : '.side__mid p');
     if (para) para.after(ctaIntro);
   };
+  // phones: the bar's button waits while the intro's own is on screen, as it waits for the sidebar on wider screens
+  const syncCtaAway = () => {
+    const r = ctaIntro.getBoundingClientRect();
+    document.body.classList.toggle('cta-away', !r.height || r.bottom < agenda.getBoundingClientRect().top);
+  };
+  agenda.addEventListener('scroll', syncCtaAway, { passive: true });
 
   /* ── Filter: Projects only ────────────────────────── */
   // in the top bar, lined up with the work it filters, where the eye already is; its list drops down over the work
@@ -948,6 +958,10 @@
     offered.map((f) => `<button role="radio" data-filter="${f.key}">${f.label}</button>`).join('') + `</div>`;
 
   function syncFilter() {
+    // phones keep the top bar to the mark and the light/dark switch: the filter sits in the page, over the work it filters
+    const wall = mq.matches && view === 'projects' && $('.ag-wall', agenda);
+    if (wall) wall.before(filterEl); else if (!filterEl.closest('.strip')) $('.theme-btn').before(filterEl);
+    filterEl.classList.toggle('filter--inpage', !!wall);
     filterEl.hidden = view !== 'projects';
     if (filterEl.hidden) return toggleFilter(false);
     $$('.filter__opts [data-filter]', filterEl).forEach((b) => b.setAttribute('aria-checked', String(b.dataset.filter === filter)));

@@ -782,12 +782,14 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
 @media (max-width: 760px) {
   .timeline { display: none; }
   .agenda { display: block; height: 100%; overflow-y: auto; padding: 0 14px 110px; overscroll-behavior: contain; }
-  .ag-intro { padding: 22px 2px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .ag-intro { padding: 28px 2px 18px; display: flex; flex-direction: column; gap: 12px; }
   /* the way in sits right under the title, a step apart, as in the sidebar */
-  .ag-intro .cta--side { margin: 8px 0 12px; }
+  .ag-intro .cta--side { margin: 10px 0 12px; }
+  /* Notes and Work are Story's cards; Projects has neither, so no key */
+  body[data-showing="projects"] .ag-intro .legend { display: none; }
   .ag-intro h1 { margin: 0; font: 300 30px/1.1 var(--font-sans); letter-spacing: -0.02em; }
   .ag-intro p { margin: 0; font: 400 14px/1.55 var(--font-sans); color: var(--muted); }
-  .ag-intro .trusted { margin-top: 8px; padding: 8px 0 0; }
+  .ag-intro .trusted { margin-top: 10px; padding: 10px 0 0; }
   .ag-intro .trusted__strip { margin: 0 -16px; }
   .ag-month { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: 12px 16px 10px; background: var(--paper); border-bottom: 1px solid var(--line-2); font: 600 15px/1 var(--font-sans); letter-spacing: -0.01em; }
   .ag-month span { color: var(--muted); }
@@ -815,7 +817,22 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   /* phones: three views, the filter and the button share the bar, so each keeps tight */
   .dynbar { gap: 0; padding: 3px; max-width: calc(100vw - 16px); }
   .dyn-seg > button { padding: 8px 8px; font-size: 12.5px; }
-  .dynbar .dyn-div--cta { margin: 0 3px; }
+  /* the bar's Work with us waits while the intro's is on screen, then slides in (as it waits for the sidebar on wider screens) */
+  .dynbar .cta--bar, .dynbar .dyn-div--cta {
+    max-width: 0; margin: 0; opacity: 0; overflow: hidden; pointer-events: none;
+    transition: max-width .22s cubic-bezier(.4, 0, 1, 1), margin .22s cubic-bezier(.4, 0, 1, 1), opacity .16s ease-in;
+  }
+  body.cta-away .dynbar .cta--bar, body.cta-away .dynbar .dyn-div--cta {
+    max-width: 220px; opacity: 1; pointer-events: auto;
+    transition: max-width .5s var(--spring) .08s, margin .5s var(--spring) .08s, opacity .25s ease-out .12s;
+  }
+  /* the line sits as far from the last view as from the pill, 8px each side, as on wider screens */
+  body.cta-away .dynbar .dyn-div--cta { margin: 0 8px; }
+  /* the filter, off the top bar: a pill over the work it filters, its list hanging down from the left */
+  .filter--inpage { z-index: 5; margin: 14px 2px 22px; }
+  .filter--inpage .filter__opts { left: 0; right: auto; transform-origin: top left; }
+  /* while a case study is open, the list behind it holds still */
+  body:has(.sheet:not([hidden])) .agenda { overflow: hidden; }
   .cta--bar .cta__in { gap: 6px; padding: 0 4px 0 10px; font-size: 12.5px; }
   .cta--bar .cta__go { width: 20px; height: 20px; }
   /* phones: a little less height in the strip */
@@ -1134,7 +1151,7 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
 .wall__more:hover { color: var(--paper-2); background: var(--ink); box-shadow: none; }
 .wall__more svg { width: 13px; height: 13px; }
 @media (max-width: 760px) {
-  .ag-wall { display: grid; gap: 30px; }
+  .ag-wall { display: grid; gap: 56px; }
   .ag-wall .sticky { justify-self: center; }
   .ag-wall .wk__cap { flex-direction: column; gap: 18px; padding-top: 14px; }
   .ag-wall .wk__figs { gap: 32px; }
