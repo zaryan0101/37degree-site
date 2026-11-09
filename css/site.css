@@ -359,7 +359,7 @@ body.draft .is-tbc { outline: 1.5px dashed var(--brand); outline-offset: 2px; }
 .outro h2 { margin: 0; font: 300 26px/1.15 var(--font-sans); letter-spacing: -0.02em; }
 .outro .who { display: grid; gap: 6px; }
 .outro .who a { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 500 14px/1.2 var(--font-sans); }
-.outro .who a span { display: block; font: 400 12px/1.3 var(--font-sans); color: var(--muted); }
+.outro .who a span:not(.avatar) { display: block; font: 400 12px/1.3 var(--font-sans); color: var(--muted); }
 .outro .who a:hover b { text-decoration: underline; }
 .outro small { font: 400 12px/1.5 var(--font-sans); color: var(--muted); }
 .outro small a { color: var(--muted); }
@@ -1154,6 +1154,9 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
   .ag-wall { display: grid; gap: 32px; }
   /* a hairline between one project and the next, edge to edge like Story's month rows, the same space above and below */
   .ag-wall .wk ~ .wk::before { content: ''; display: block; height: 1px; margin: 0 -14px 32px; background: var(--line-2); }
+  /* and one after the last project, before the footer */
+  .ag-wall + .ag-outro { padding-top: 32px; }
+  .ag-wall + .ag-outro::before { content: ''; display: block; height: 1px; margin: 0 -16px 32px; background: var(--line-2); }
   .ag-wall .sticky { justify-self: center; }
   .ag-wall .wk__cap { flex-direction: column; gap: 18px; padding-top: 14px; }
   .ag-wall .wk__figs { gap: 32px; }
