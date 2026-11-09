@@ -894,8 +894,8 @@
     anchorBar();
     syncCtaAway();
   }
-  // the whole bar sits centred on the work. Story's map and Projects' counter take the same room, so switching views
-  // never moves the buttons; the bar moves only when the sidebar goes (and Work with us slides in with it)
+  // the whole bar sits centred on the work (or the screen once the sidebar goes); Projects' counter hugs its numbers,
+  // so the bar is narrower there than in Story and the buttons shift a little between the two (Zaryan's call, 2026-11-10)
   function anchorBar() {
     if (mq.matches) { bar.style.left = bar.style.transform = ''; return; }
     const away = view === 'explore' || document.body.classList.contains('side-hidden');
