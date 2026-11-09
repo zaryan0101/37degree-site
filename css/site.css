@@ -1142,6 +1142,8 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
 .dyn-step button:disabled { opacity: .3; cursor: default; background: none; }
 .dyn-step svg { width: 15px; height: 15px; }
 @media (min-width: 761px) {
+  /* the same room as Story's map (180px and its 12px of margin), so the bar keeps one width across the two views */
+  .dyn-step { box-sizing: border-box; width: 192px; justify-content: center; }
   body[data-showing="projects"] .dyn-step { display: flex; }
   body[data-showing="projects"] .minimap { display: none; }
 }

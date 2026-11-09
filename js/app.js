@@ -894,15 +894,14 @@
     anchorBar();
     syncCtaAway();
   }
-  // the view buttons hold still: whatever else the bar shows or hides runs off to their right, and they move only when
-  // the sidebar goes, to stay centred on the work. The owner pill centres there on its own
+  // the whole bar sits centred on the work. Story's map and Projects' counter take the same room, so switching views
+  // never moves the buttons; the bar moves only when the sidebar goes (and Work with us slides in with it)
   function anchorBar() {
     if (mq.matches) { bar.style.left = bar.style.transform = ''; return; }
     const away = view === 'explore' || document.body.classList.contains('side-hidden');
     const x = away ? innerWidth / 2 : (innerWidth + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--side'))) / 2;
-    if (bar.classList.contains('is-owner')) { bar.style.left = `${x}px`; bar.style.transform = ''; return; }
-    bar.style.transform = 'none';
-    bar.style.left = `${Math.round(x - seg.offsetLeft - seg.offsetWidth / 2)}px`;
+    bar.style.left = `${x}px`;
+    bar.style.transform = '';
   }
   addEventListener('resize', anchorBar);
   function setView(v) {
