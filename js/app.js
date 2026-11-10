@@ -938,9 +938,11 @@
     const para = $(mq.matches ? '.ag-intro p' : '.side__mid p');
     if (para) para.after(ctaIntro);
   };
-  // phones: the bar's button waits while the intro's own is on screen, as it waits for the sidebar on wider screens
+  // the bar's button waits while the sidebar's own is on screen; phones have no button in the intro,
+  // so there it waits for the whole intro to scroll away
   const syncCtaAway = () => {
-    const r = ctaIntro.getBoundingClientRect();
+    const ref = mq.matches ? $('.ag-intro', agenda) : ctaIntro;
+    const r = ref ? ref.getBoundingClientRect() : { height: 0 };
     document.body.classList.toggle('cta-away', !r.height || r.bottom < agenda.getBoundingClientRect().top);
   };
   agenda.addEventListener('scroll', syncCtaAway, { passive: true });

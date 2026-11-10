@@ -782,9 +782,10 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
 @media (max-width: 760px) {
   .timeline { display: none; }
   .agenda { display: block; height: 100%; overflow-y: auto; padding: 0 14px 110px; overscroll-behavior: contain; }
-  .ag-intro { padding: 28px 2px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .ag-intro { padding: 18px 2px 18px; display: flex; flex-direction: column; gap: 12px; }
   /* the way in sits right under the title, a step apart, as in the sidebar */
-  .ag-intro .cta--side { margin: 10px 0 12px; }
+  /* phones: no button in the intro; the bar's Work with us takes over once the intro has scrolled away */
+  .ag-intro .cta--side { display: none; }
   /* Notes and Work are Story's cards; Projects has neither, so no key */
   body[data-showing="projects"] .ag-intro .legend { display: none; }
   .ag-intro h1 { margin: 0; font: 300 30px/1.1 var(--font-sans); letter-spacing: -0.02em; }
@@ -840,8 +841,10 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   .mark { gap: 8px; font-size: 17px; }
   .mark svg { width: 21px; height: 21px; }
   .strip { padding: 0 16px; }
-  .ag-outro { padding: 28px 2px; }
-  .ag-outro .outro { padding: 0; }
+  .ag-outro { padding: 28px 4px 44px; }
+  .ag-outro .outro { padding: 0; gap: 28px; }
+  /* the two of us side by side */
+  .ag-outro .outro .who { grid-template-columns: 1fr 1fr; gap: 8px; }
   /* full width on phones, so it takes touches itself: iOS won't scroll a container that ignores them */
   .sheet { --pad: 20px; padding: 7vh 0 22vh; left: 0; width: auto; pointer-events: auto; }
   .paper { width: calc(100vw - 16px); margin: 0 auto; }
@@ -1156,11 +1159,16 @@ body[data-showing="projects"] .col--end .col-head { margin-right: calc((504px - 
   .ag-wall .wk ~ .wk::before { content: ''; display: block; height: 1px; margin: 0 -14px 32px; background: var(--line-2); }
   /* and one after the last project, before the footer */
   .ag-wall + .ag-outro { padding-top: 32px; }
-  .ag-wall + .ag-outro::before { content: ''; display: block; height: 1px; margin: 0 -16px 32px; background: var(--line-2); }
+  .ag-wall + .ag-outro::before { content: ''; display: block; height: 1px; margin: 0 -18px 32px; background: var(--line-2); }
   .ag-wall .sticky { justify-self: center; }
-  .ag-wall .wk__cap { flex-direction: column; gap: 18px; padding-top: 14px; }
+  .ag-wall .wk { gap: 4px; }
+  /* the caption: a single fact sits beside the title when there's room and drops under it when there isn't;
+     two facts take their own line, spread to either side */
+  .ag-wall .wk__cap { flex-flow: row wrap; justify-content: space-between; align-items: center; gap: 18px 16px; padding: 14px 4px; }
   .ag-wall .wk__figs { gap: 32px; }
-  .ag-wall .wk__fig b { font-size: 19px; }
+  .ag-wall .wk__figs:has(.wk__fig + .wk__fig) { flex-basis: 100%; justify-content: space-between; }
+  .ag-wall .wk__fig b { font-size: 18px; }
+  .ag-wall .wk__open { font-size: 14px; }
 }
 
 /* ── Exploration: design references, the images alone, on a dotted table that never ends ── */
