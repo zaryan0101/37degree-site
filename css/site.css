@@ -786,14 +786,16 @@ button.card.has-photos:hover .stack img:nth-child(2) { transform: translate(var(
   /* the way in sits right under the title, a step apart, as in the sidebar */
   /* phones: no button in the intro; the bar's Work with us takes over once the intro has scrolled away */
   .ag-intro .cta--side { display: none; }
-  /* Notes and Work are Story's cards; Projects has neither, so no key */
-  body[data-showing="projects"] .ag-intro .legend { display: none; }
+  /* phones: no Notes / Work key in the intro, in either view */
+  .ag-intro .legend { display: none; }
   .ag-intro h1 { margin: 0; font: 300 30px/1.1 var(--font-sans); letter-spacing: -0.02em; }
   .ag-intro p { margin: 0; font: 400 14px/1.55 var(--font-sans); color: var(--muted); }
   .ag-intro .trusted { margin-top: 10px; padding: 10px 0 0; }
   .ag-intro .trusted__strip { margin: 0 -16px; }
-  .ag-month { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: 12px 16px 10px; background: var(--paper); border-bottom: 1px solid var(--line-2); font: 600 15px/1 var(--font-sans); letter-spacing: -0.01em; }
+  .ag-month { position: sticky; top: 0; z-index: 3; margin: 0 -14px 8px; padding: 14px 16px 13px; background: var(--paper); border-bottom: 1px solid var(--line-2); font: 600 15px/1 var(--font-sans); letter-spacing: -0.01em; }
   .ag-month span { color: var(--muted); }
+  /* a little air after each month's last day, before the next month */
+  .ag-day + .ag-month { margin-top: 8px; }
   .ag-day { display: grid; grid-template-columns: 38px 1fr; gap: 10px; padding: 10px 0; }
   .ag-date { text-align: center; padding-top: 8px; }
   .ag-date b { display: block; font: 600 17px/1 var(--font-sans); }
